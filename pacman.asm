@@ -1,76 +1,67 @@
 ; #########################################################################
-;
-;                              GDI Animate
-;
-; This is a simple example of a GDI based animation technique. It uses the
-; API function BitBlt to read different portions of a double bitmap and
-; displays them on the client area of the window. The function is fast
-; enough with a small bitmap to need a delay between each BLIT and the
-; logic used is to have a double bitmap of the same image which is read
-; in blocks that step across 1 pixel at a time until the width of the
-; bitmap is completely read. This allows a continuous scrolling of the
-; bitmap image.
-
+;                                Pac-Man
 ; #########################################################################
 
-      .386
-      .model flat, stdcall  ; 32 bit memory model
-      option casemap :none  ; case sensitive
+.386
+.model flat, stdcall  ; 32 bit STDCALL
+option casemap :none  ; case sensitive
       
-;     include files
-;     ~~~~~~~~~~~~~
-      include \MASM32\INCLUDE\windows.inc
-      include \MASM32\INCLUDE\masm32.inc
-      include \MASM32\INCLUDE\gdi32.inc
-      include \MASM32\INCLUDE\user32.inc
-      include \MASM32\INCLUDE\kernel32.inc
-      include \MASM32\INCLUDE\Comctl32.inc
-      include \MASM32\INCLUDE\comdlg32.inc
-      include \MASM32\INCLUDE\shell32.inc
+; Includes
+include \MASM32\INCLUDE\windows.inc
+include \MASM32\INCLUDE\masm32.inc
+include \MASM32\INCLUDE\gdi32.inc
+include \MASM32\INCLUDE\user32.inc
+include \MASM32\INCLUDE\kernel32.inc
+include \MASM32\INCLUDE\Comctl32.inc
+include \MASM32\INCLUDE\comdlg32.inc
+include \MASM32\INCLUDE\shell32.inc
 
-;     libraries
-;     ~~~~~~~~~
-      includelib \MASM32\LIB\masm32.lib
+; Bibliotecas
+includelib \MASM32\LIB\masm32.lib
+includelib \MASM32\LIB\gdi32.lib
+includelib \MASM32\LIB\user32.lib
+includelib \MASM32\LIB\kernel32.lib
+includelib \MASM32\LIB\Comctl32.lib
+includelib \MASM32\LIB\comdlg32.lib
+includelib \MASM32\LIB\shell32.lib
 
-      includelib \MASM32\LIB\gdi32.lib
-      includelib \MASM32\LIB\user32.lib
-      includelib \MASM32\LIB\kernel32.lib
-      includelib \MASM32\LIB\Comctl32.lib
-      includelib \MASM32\LIB\comdlg32.lib
-      includelib \MASM32\LIB\shell32.lib
+; Protótipos
+WinMain     PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WndProc     PROTO :DWORD,:DWORD,:DWORD,:DWORD
+TopXY       PROTO :DWORD,:DWORD
+FillBuffer  PROTO :DWORD,:DWORD,:BYTE
+Paint_Proc  PROTO :DWORD,:DWORD,:DWORD
 
-      WinMain PROTO :DWORD,:DWORD,:DWORD,:DWORD
-      WndProc PROTO :DWORD,:DWORD,:DWORD,:DWORD
-      TopXY PROTO   :DWORD,:DWORD
-      FillBuffer   PROTO :DWORD,:DWORD,:BYTE
-      Paint_Proc   PROTO :DWORD,:DWORD,:DWORD
+; Macros
+szText MACRO Name, Text:VARARG
+  LOCAL lbl
+  jmp lbl
+    Name db Text,0
+  lbl:
+ENDM
 
-      szText MACRO Name, Text:VARARG
-        LOCAL lbl
-          jmp lbl
-            Name db Text,0
-          lbl:
-        ENDM
+m2m MACRO M1, M2
+  push M2
+  pop  M1
+ENDM
 
-      m2m MACRO M1, M2
-        push M2
-        pop  M1
-      ENDM
+return MACRO arg
+  mov eax, arg
+  ret
+ENDM
 
-      return MACRO arg
-        mov eax, arg
-        ret
-      ENDM
 ; #########################################################################
 
 .data?
 
-    hInstance DWORD ?
-    hIcon     DWORD ?
-    hWnd      DWORD ?
-    CommandLine DWORD ?
+    hInstance     DWORD ?
+    hIcon         DWORD ?
+    hWnd          DWORD ?
+    CommandLine   DWORD ?
     szDisplayName DWORD ?
-    hBmp DWORD ?
+    hBmp          DWORD ?
+
+; #########################################################################
 
 .code
 
@@ -92,13 +83,13 @@ WinMain proc hInst     :DWORD,
       ; Put LOCALs on stack
       ;====================
 
-      LOCAL wc   :WNDCLASSEX
-      LOCAL msg  :MSG
-      LOCAL Wwd  :DWORD
-      LOCAL Wht  :DWORD
-      LOCAL Wtx  :DWORD
-      LOCAL Wty  :DWORD
-      LOCAL hBrush :DWORD
+      LOCAL wc      :WNDCLASSEX
+      LOCAL msg     :MSG
+      LOCAL Wwd     :DWORD
+      LOCAL Wht     :DWORD
+      LOCAL Wtx     :DWORD
+      LOCAL Wty     :DWORD
+      LOCAL hBrush  :DWORD
 
       ;==================================================
       ; Fill WNDCLASSEX structure with required variables
@@ -122,7 +113,7 @@ WinMain proc hInst     :DWORD,
       mov wc.lpszMenuName,   NULL
       mov wc.lpszClassName,  offset szClassName
       m2m wc.hIcon,          hIcon
-        invoke LoadCursor,NULL,IDC_ARROW
+      invoke LoadCursor,NULL,IDC_ARROW
       mov wc.hCursor,        eax
       m2m wc.hIconSm,        hIcon
 
@@ -132,8 +123,8 @@ WinMain proc hInst     :DWORD,
       ; Centre window at following size
       ;================================
 
-      mov Wwd, 640
-      mov Wht, 480
+      mov Wwd, 448
+      mov Wht, 496
 
       invoke GetSystemMetrics,SM_CXSCREEN
       invoke TopXY,Wwd,eax
@@ -200,6 +191,9 @@ WndProc proc hWin   :DWORD,
     ;======== menu commands ========
     .elseif uMsg == WM_CREATE
 
+      invoke LoadBitmap, hInstance, 200
+      mov hBmp, eax
+
     .elseif uMsg == WM_SIZE
 
     .elseif uMsg == WM_PAINT
@@ -243,15 +237,15 @@ Paint_Proc proc hWin:DWORD, hDC:DWORD, movit:DWORD
     LOCAL memDC:DWORD
     LOCAL var1 :DWORD
     LOCAL var2 :DWORD
-    LOCAL var3 :DWORD
+    LOCAL var3 :DWORD  
 
     invoke CreateCompatibleDC,hDC
     mov memDC, eax
     
     invoke SelectObject,memDC,hBmp
-    mov hOld, eax
 
-    invoke SelectObject,hDC,hOld
+    invoke StretchBlt, hDC, 0, 0, 448, 496, memDC, 0, 0, 224, 248, SRCCOPY 
+
     invoke DeleteDC,memDC
 
     return 0
