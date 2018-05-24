@@ -29,8 +29,7 @@ includelib \MASM32\LIB\shell32.lib
 WinMain     PROTO :DWORD,:DWORD,:DWORD,:DWORD
 WndProc     PROTO :DWORD,:DWORD,:DWORD,:DWORD
 TopXY       PROTO :DWORD,:DWORD
-FillBuffer  PROTO :DWORD,:DWORD,:BYTE
-Paint_Proc  PROTO :DWORD,:DWORD,:DWORD
+Paint_Proc  PROTO :DWORD,:DWORD
 
 ; Macros
 szText MACRO Name, Text:VARARG
@@ -59,7 +58,10 @@ ENDM
     hWnd          DWORD ?
     CommandLine   DWORD ?
     szDisplayName DWORD ?
-    hBmp          DWORD ?
+
+    mapFullBitmap   DWORD ?
+    mapEmptyBitmap  DWORD ?
+    spritesBitmap   DWORD ?
 
 ; #########################################################################
 
@@ -90,6 +92,7 @@ WinMain proc hInst     :DWORD,
       LOCAL Wtx     :DWORD
       LOCAL Wty     :DWORD
       LOCAL hBrush  :DWORD
+      LOCAL wrect   :RECT
 
       ;==================================================
       ; Fill WNDCLASSEX structure with required variables
@@ -123,34 +126,38 @@ WinMain proc hInst     :DWORD,
       ; Centre window at following size
       ;================================
 
-      mov Wwd, 448
-      mov Wht, 496
+      mov wrect.left, 0
+      mov wrect.top, 0
+      mov wrect.right, 454    ; 448 + 6
+      mov wrect.bottom, 524   ; 496 + 28
 
       invoke GetSystemMetrics,SM_CXSCREEN
-      invoke TopXY,Wwd,eax
+      invoke TopXY,wrect.right,eax
       mov Wtx, eax
 
       invoke GetSystemMetrics,SM_CYSCREEN
-      invoke TopXY,Wht,eax
+      invoke TopXY,wrect.bottom,eax
       mov Wty, eax
 
       invoke CreateWindowEx,WS_EX_LEFT,
                             ADDR szClassName,
                             ADDR szDisplayName,
                             WS_OVERLAPPED or WS_SYSMENU,
-                            Wtx,Wty,Wwd,Wht,
+                            Wtx,Wty,wrect.right,wrect.bottom,
                             NULL,NULL,
                             hInst,NULL
-      mov   hWnd,eax
+      mov hWnd,eax
 
       invoke ShowWindow,hWnd,SW_SHOWNORMAL
       invoke UpdateWindow,hWnd
 
+      invoke InvalidateRect, hWnd, NULL, FALSE
       ;===================================
       ; Loop until PostQuitMessage is sent
       ;===================================
 
     StartLoop:
+
       invoke GetMessage,ADDR msg,NULL,0,0
       cmp eax, 0
       je ExitLoop
@@ -176,34 +183,26 @@ WndProc proc hWin   :DWORD,
     LOCAL Rct    :RECT
     LOCAL hDC    :DWORD
     LOCAL Ps     :PAINTSTRUCT
-    LOCAL buffer1[128]:BYTE  ; these are two spare buffers
-    LOCAL buffer2[128]:BYTE  ; for text manipulation etc..
 
-    .if uMsg == WM_COMMAND
-      .if wParam == 500
-          invoke GetDC,hWin
-          mov hDC, eax
-          invoke Paint_Proc,hWin,hDC,1
-          invoke ReleaseDC,hWin,hDC
-        return 0
-      .endif
+    .if uMsg == WM_CREATE
 
-    ;======== menu commands ========
-    .elseif uMsg == WM_CREATE
+      invoke LoadBitmap, hInstance, 100
+      mov spritesBitmap, eax
 
       invoke LoadBitmap, hInstance, 200
-      mov hBmp, eax
+      mov mapFullBitmap, eax
 
-    .elseif uMsg == WM_SIZE
+      invoke LoadBitmap, hInstance, 300
+      mov mapEmptyBitmap, eax
 
     .elseif uMsg == WM_PAINT
         invoke BeginPaint,hWin,ADDR Ps
         mov hDC, eax
-        invoke Paint_Proc,hWin,hDC,0
-        invoke EndPaint,hWin,ADDR Ps
-        return 0
 
-    .elseif uMsg == WM_CLOSE
+        invoke Paint_Proc,hWin,hDC
+
+        invoke EndPaint,hWin,ADDR Ps
+        invoke InvalidateRect, hWnd, NULL, FALSE
 
     .elseif uMsg == WM_DESTROY
         invoke PostQuitMessage,NULL
@@ -231,13 +230,8 @@ TopXY endp
 
 ; ########################################################################
 
-Paint_Proc proc hWin:DWORD, hDC:DWORD, movit:DWORD
-
-    LOCAL hOld :DWORD
+Paint_Proc proc hWin:DWORD, hDC:DWORD
     LOCAL memDC:DWORD
-    LOCAL var1 :DWORD
-    LOCAL var2 :DWORD
-    LOCAL var3 :DWORD  
 
     invoke CreateCompatibleDC,hDC
     mov memDC, eax
