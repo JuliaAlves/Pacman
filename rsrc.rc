@@ -1,5 +1,0 @@
-500 ICON "mainicon.ico"
-
-100 BITMAP "sprite.bmp"
-200 BITMAP "mapfull.bmp"
-300 BITMAP "mapempty.bmp"

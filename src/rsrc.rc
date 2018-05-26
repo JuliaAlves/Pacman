@@ -1,0 +1,11 @@
+#define RC_ICON         0x01
+
+#define RC_SPRITE       0x10
+#define RC_MAP_FULL     0x21
+#define RC_MAP_EMPTY    0x20
+
+RC_ICON         ICON    "../res/mainicon.ico"
+
+RC_SPRITE       BITMAP  "../res/sprite.bmp"
+RC_MAP_FULL     BITMAP  "../res/mapfull.bmp"
+RC_MAP_EMPTY    BITMAP  "../res/mapempty.bmp"
