@@ -15,6 +15,7 @@ include \MASM32\INCLUDE\gdi32.inc
 include \MASM32\INCLUDE\kernel32.inc
 include \MASM32\INCLUDE\masm32.inc
 
+include include\macros.inc
 include include\graphics.inc
 include include\pacman.inc
 ;==============================================================================
@@ -27,6 +28,7 @@ includelib \MASM32\LIB\kernel32.lib
 ;==============================================================================
 ; Protótipos
 ;==============================================================================
+
 ; Procedimento principal
 WinMain 				PROTO :DWORD, :DWORD, :DWORD, :DWORD
 
@@ -47,55 +49,22 @@ on_render 				PROTO :DWORD
 
 ; Evento de fechamento
 on_destroy 				PROTO :DWORD
+
 ;==============================================================================
-; Macros
+; Seção de dados
 ;==============================================================================
-;------------------------------------------------------------------------------
-; string
-;
-;     Declara uma variável de texto
-;
-;   name          : Nome da variável
-;   text {VARARG} : Texto
-;------------------------------------------------------------------------------
-string MACRO name, text:VARARG
-	LOCAL 	lbl
-	jmp 	lbl
-		name db text, 0
-	lbl:
-ENDM
-;------------------------------------------------------------------------------
-; m2m
-;
-;     Move de memória para memória
-;
-;   dest  : Destino
-;   src   : Origem
-;------------------------------------------------------------------------------
-m2m MACRO dest, src
-	push 	src
-	pop  	dest
-ENDM
-;------------------------------------------------------------------------------
-; return
-;
-;     Retorna um valor de uma função usando o registrador de retorno
-;
-;   arg : Valor sendo retornado
-;------------------------------------------------------------------------------
-return MACRO arg
-	mov 	eax, arg
-	ret
-ENDM
+.data?
+
+	this_instance	DWORD	?
+
 ;==============================================================================
 ; Seção de código
 ;==============================================================================
 .code
-start:
 ;------------------------------------------------------------------------------
 ; Constantes
 ;------------------------------------------------------------------------------
-RC_ICON			EQU		1
+RC_ICON			EQU		01h
 WND_CLASS_NAME	EQU		"PacMan", 0
 WND_TITLE		EQU		"Pac Man", 0
 WND_WIDTH		EQU		454
@@ -103,13 +72,15 @@ WND_HEIGHT		EQU		524
 ;------------------------------------------------------------------------------
 ; Ponto de entrada
 ;------------------------------------------------------------------------------
-invoke 	GetModuleHandle, NULL
-mov 	ebx, eax
+start:
 
-invoke 	GetCommandLine
+	invoke 	GetModuleHandle, NULL
+	mov 	this_instance, eax
 
-invoke 	WinMain, ebx, NULL, eax, SW_SHOWDEFAULT
-invoke 	ExitProcess, eax
+	invoke 	GetCommandLine
+
+	invoke 	WinMain, this_instance, NULL, eax, SW_SHOWDEFAULT
+	invoke 	ExitProcess, eax
 ;------------------------------------------------------------------------------
 ; register_window_class
 ;
@@ -118,6 +89,7 @@ invoke 	ExitProcess, eax
 ; 	hInst     {HINSTANCE} : Instância do programa
 ;------------------------------------------------------------------------------
 register_window_class PROC hInst : DWORD
+
 	LOCAL 	wc      	:WNDCLASSEX
 
 	; Nome da classe
@@ -155,6 +127,7 @@ register_window_class ENDP
 ; 	hInst     {HINSTANCE} : Instância do programa
 ;------------------------------------------------------------------------------
 create_window PROC hInst : DWORD
+
 	LOCAL	window 	:HWND
 
 	; Nome da classe da janela
@@ -202,7 +175,7 @@ WinMain PROC hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
 	invoke 	create_window, hInst
 
 	; Loop principal
-    main_loop:
+	main_loop:
 		invoke 	GetMessage, ADDR msg, NULL, 0, 0
 		cmp 	eax, 0
 		je 		exit
@@ -211,9 +184,10 @@ WinMain PROC hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
 		invoke 	TranslateMessage, ADDR msg
 		invoke 	DispatchMessage,  ADDR msg
 		jmp 	main_loop
-    exit:
+	exit:
 
-    return 	msg.wParam
+	return 	msg.wParam
+
 WinMain ENDP
 ;------------------------------------------------------------------------------
 ; WinProc
@@ -242,6 +216,7 @@ WndProc PROC hWnd : DWORD, uMsg : DWORD, wParam : DWORD, lParam : DWORD
 	.endif
 
 	invoke 	DefWindowProc, hWnd, uMsg, wParam, lParam
+
 	ret
 WndProc ENDP
 ;------------------------------------------------------------------------------
@@ -252,7 +227,9 @@ WndProc ENDP
 ;   hWnd    {HWND}  : Handle da janela
 ;------------------------------------------------------------------------------
 on_create PROC hWnd : DWORD
-	;call 	graphics_load_bitmaps
+
+	invoke 	graphics_load_bitmaps, this_instance
+
 	ret
 on_create ENDP
 ;------------------------------------------------------------------------------
@@ -273,7 +250,7 @@ on_render PROC hWnd : DWORD
 
 	; Atualiza e renderiza o jogo
 	;call 	pacman_update
-	;invoke 	graphics_render, hDC
+	invoke 	graphics_render, hDC
 
 	; Finaliza o desenho e libera os recursor
 	invoke 	EndPaint, hWnd, ADDR Ps
@@ -291,7 +268,11 @@ on_render ENDP
 ;   hWnd    {HWND}  : Handle da janela
 ;------------------------------------------------------------------------------
 on_destroy PROC hWnd : DWORD
+
+	;invoke 	graphics_dispose_bitmaps
 	invoke 	ExitProcess, 0
+
 	ret
 on_destroy ENDP
+
 end start

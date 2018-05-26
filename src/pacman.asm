@@ -7,10 +7,9 @@
 .model flat, stdcall
 option casemap :none
 
+include include\macros.inc
 include include\pacman.inc
 
 .code
 
-start:
-
-end start
+end
