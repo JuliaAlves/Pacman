@@ -55,20 +55,24 @@ on_destroy 				PROTO :DWORD
 ;==============================================================================
 .data?
 
+	; Instância do programa
 	this_instance	DWORD	?
 
+;==============================================================================
+; Constantes
+;==============================================================================
+.const
+
+	RC_ICON			EQU		01h
+
+	WND_CLASS_NAME	EQU		"PacMan", 0
+	WND_TITLE		EQU		"Pac Man", 0
+	WND_WIDTH		EQU		454
+	WND_HEIGHT		EQU		525
 ;==============================================================================
 ; Seção de código
 ;==============================================================================
 .code
-;------------------------------------------------------------------------------
-; Constantes
-;------------------------------------------------------------------------------
-RC_ICON			EQU		01h
-WND_CLASS_NAME	EQU		"PacMan", 0
-WND_TITLE		EQU		"Pac Man", 0
-WND_WIDTH		EQU		454
-WND_HEIGHT		EQU		524
 ;------------------------------------------------------------------------------
 ; Ponto de entrada
 ;------------------------------------------------------------------------------
@@ -228,6 +232,7 @@ WndProc ENDP
 ;------------------------------------------------------------------------------
 on_create PROC hWnd : DWORD
 
+	call 	pac_init
 	invoke 	graphics_load_bitmaps, this_instance
 
 	ret
@@ -249,7 +254,7 @@ on_render PROC hWnd : DWORD
 	mov 	hDC, eax
 
 	; Atualiza e renderiza o jogo
-	;call 	pacman_update
+	call 	pac_update
 	invoke 	graphics_render, hDC
 
 	; Finaliza o desenho e libera os recursor
@@ -269,7 +274,8 @@ on_render ENDP
 ;------------------------------------------------------------------------------
 on_destroy PROC hWnd : DWORD
 
-	;invoke 	graphics_dispose_bitmaps
+	call 	pac_finish
+	invoke 	graphics_dispose_bitmaps
 	invoke 	ExitProcess, 0
 
 	ret

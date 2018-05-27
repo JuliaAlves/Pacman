@@ -14,6 +14,7 @@ include \MASM32\INCLUDE\kernel32.inc
 include \MASM32\INCLUDE\masm32.inc
 
 include include\macros.inc
+include include\pacman.inc
 include include\graphics.inc
 
 includelib \MASM32\LIB\masm32.lib
@@ -63,7 +64,6 @@ end_draw 		PROTO 	:HDC
 
 ; Desenha um bitmap
 draw_bitmap 	PROTO 	:DWORD,
-						:DWORD,
 						:HBITMAP,
 						:DWORD,
 						:DWORD,
@@ -71,15 +71,10 @@ draw_bitmap 	PROTO 	:DWORD,
 						:DWORD
 
 ; Desenha o pacman
-draw_pacman		PROTO 	:DWORD,
-						:DWORD,
-						:BYTE
+draw_pacman		PROTO
 
 ; Desenha um fantasma
-draw_ghost		PROTO 	:BYTE,
-						:DWORD,
-						:DWORD,
-						:BYTE
+draw_ghost		PROTO 	:DWORD
 
 ;==============================================================================
 ; Seção de dados
@@ -98,12 +93,9 @@ draw_ghost		PROTO 	:BYTE,
 	bufferDC 		HDC 	? 	; Contexto de desenho do buffer
 
 ;==============================================================================
-; Seção de código
-;==============================================================================
-.code
-;------------------------------------------------------------------------------
 ; Constantes
-;------------------------------------------------------------------------------
+;==============================================================================
+.const
 
 ; Dimensões da tela
 SCREEN_WIDTH	EQU 	448
@@ -117,21 +109,13 @@ BMP_MAPFULL 	EQU		021h
 BMP_MAPEMPTY	EQU		020h
 BMP_SPRITES		EQU		010h
 
-; Fantasmas
-BLINKY			EQU		00h
-PINKY			EQU		01h
-INKY			EQU		02h
-CLYDE			EQU		03h
-
-; Direções
-DIR_RIGHT		EQU 	00h
-DIR_LEFT		EQU 	01h
-DIR_UP 			EQU 	02h
-DIR_DOWN		EQU 	03h
-
 ; Intervalo entre os frames
 FRAME_INTERVAL	EQU 	256
 
+;==============================================================================
+; Seção de código
+;==============================================================================
+.code
 ;------------------------------------------------------------------------------
 ; graphics_load_bitmaps
 ;
@@ -164,16 +148,16 @@ graphics_render PROC hDC : DWORD
 	invoke begin_draw, hDC
 
 	; Fundo
-	invoke draw_bitmap, 0, 0, bitmap_mapfull, 0, 0, REAL_WIDTH, REAL_HEIGHT
+	invoke draw_bitmap, 0, bitmap_mapfull, 0, 0, REAL_WIDTH, REAL_HEIGHT
 
 	;TODO: Desenhar objetos na tela
 
-	invoke draw_pacman, 5, 5, DIR_RIGHT
+	invoke draw_pacman
 
-	invoke draw_ghost, BLINKY, 21, 4, DIR_LEFT
-	invoke draw_ghost, PINKY, 37, 4, DIR_LEFT
-	invoke draw_ghost, INKY, 53, 4, DIR_LEFT
-	invoke draw_ghost, CLYDE, 69, 4, DIR_LEFT
+	invoke draw_ghost, BLINKY
+	invoke draw_ghost, PINKY
+	invoke draw_ghost, INKY
+	invoke draw_ghost, CLYDE
 
 	invoke end_draw, hDC
 
@@ -251,16 +235,14 @@ end_draw ENDP
 ;
 ;		Desenha um bitmap na tela
 ;
-;	dstX		{DWORD}		: Posição X de destino
-;	dstY		{DWORD}		: Posição Y de destino
+;	pos			{DWORD}		: Posição de destino (0XXYYh)
 ;	bitmap		{HBITMAP}	: Handle do bitmap
 ;	srcX		{DWORD}		: Posição X de origem
 ;	srcY		{DWORD}		: Posição Y de origem
 ;	srcWidth	{DWORD}		: Largura do bitmap
 ;	srcHeight	{DWORD}		: Altura do bitmap
 ;------------------------------------------------------------------------------
-draw_bitmap PROC	dstX		: DWORD,
-					dstY		: DWORD,
+draw_bitmap PROC	pos 		: DWORD,
 					bitmap 		: HBITMAP,
 					srcX 		: DWORD,
 					srcY 		: DWORD,
@@ -268,6 +250,16 @@ draw_bitmap PROC	dstX		: DWORD,
 					srcHeight	: DWORD
 
 	LOCAL 	memDC 		: HDC
+	LOCAL 	dstX		: DWORD
+	LOCAL 	dstY 		: DWORD
+
+	; Decodifica a posição do objeto
+	m2m dstX, pos
+	and dstX, 0FF00h
+	shr dstX, 8
+
+	m2m dstY, pos
+	and dstY, 000FFh
 
 	; Cria uma contexto de desenho compatível
 	invoke CreateCompatibleDC, bufferDC
@@ -294,20 +286,25 @@ draw_bitmap ENDP
 ; draw_pacman
 ;
 ;		Desenha o pacman
-;
-;	x 		{DWORD}	: Posição X
-;	y 		{DWORD}	: Posição Y
-;	dir 	{BYTE}	: Direção
 ;------------------------------------------------------------------------------
-draw_pacman PROC x : DWORD, y : DWORD, dir : BYTE
+draw_pacman PROC
 
 	LOCAL srcX : DWORD
 	LOCAL srcY : DWORD
+	LOCAL pos  : DWORD
+	LOCAL dir  : DWORD
+
+	invoke pac_get_attr, PACMAN, ATTR_POSITION
+	mov pos, eax
+
+	invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+	mov dir, eax
 
 	mov srcX, 0
 	mov srcY, 0
 
 	; Calcula a posição Y do sprite
+	shr dir, 16
 	y_inc:
 		cmp dir, 0
 		je y_n_inc
@@ -330,7 +327,7 @@ draw_pacman PROC x : DWORD, y : DWORD, dir : BYTE
 	.endif
 
 	; Desenha o bitmap
-	invoke draw_bitmap, x, y, bitmap_sprites, srcX, srcY, 16, 16
+	invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 16, 16
 	
 	ret
 draw_pacman ENDP
@@ -339,26 +336,31 @@ draw_pacman ENDP
 ;
 ;		Desenha um fantasma
 ;
-;	id 		{BYTE}	: ID do fantasma
-;	x 		{DWORD}	: Posição X
-;	y 		{DWORD}	: Posição Y
-;	dir 	{BYTE}	: Direção
+;	id 	{DWORD}	: ID do fantasma
 ;------------------------------------------------------------------------------
-draw_ghost PROC id : BYTE, x : DWORD, y : DWORD, dir : BYTE
+draw_ghost PROC id : DWORD
 
 	LOCAL srcX : DWORD
 	LOCAL srcY : DWORD
+	LOCAL pos  : DWORD
+	LOCAL dir  : DWORD
+	
+	invoke pac_get_attr, id, ATTR_POSITION
+	mov pos, eax
+
+	invoke pac_get_attr, id, ATTR_DIRECTION
+	mov dir, eax
 
 	mov srcX, 0
 	mov srcY, 64
 
 	; Calcula a posição Y do sprite
 	y_inc:
+		sub id, 004h
 		cmp id, 0
 		je y_n_inc
 
 		add srcY, 16
-		dec id
 
 		jmp y_inc
 	y_n_inc:
@@ -369,7 +371,8 @@ draw_ghost PROC id : BYTE, x : DWORD, y : DWORD, dir : BYTE
 	mov ebx, FRAME_INTERVAL
 	div ebx
 
-	; Calcula a posição X do spite
+	; Calcula a posição X do sprite
+	shr dir, 16
 	x_inc:
 		cmp dir, 0
 		je x_n_inc
@@ -385,7 +388,7 @@ draw_ghost PROC id : BYTE, x : DWORD, y : DWORD, dir : BYTE
 	.endif
 
 	; Desenha o bitmap
-	invoke draw_bitmap, x, y, bitmap_sprites, srcX, srcY, 16, 16
+	invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 16, 16
 	
 	ret
 draw_ghost ENDP
