@@ -16,8 +16,11 @@ pac_get_attr	PROTO 	:DWORD, :DWORD
 ; Define um atributo de um objeto do jogo
 pac_set_attr    PROTO   :DWORD, :DWORD, :DWORD
 
-; Obtém a passabilidade de uma posição no mapa
-pac_is_passable	PROTO 	:BYTE, :BYTE
+; Determina o estado de uma tecla do teclado
+pac_keystate    PROTO   :DWORD
+
+; Obtém o valor de uma posição no mapa
+pac_get_mapcell PROTO   :BYTE, :BYTE
 
 ; Atualiza os objetos jogo
 pac_update		PROTO
@@ -60,3 +63,9 @@ ATTR_POSITION   equ 00000FFFFh
 ATTR_DIRECTION 	equ 0000F0000h
 ATTR_TURN       equ 000F00000h
 ATTR_STATE      equ 0FF000000h
+
+; Códigos de célula do mapa
+MAP_WALL        equ 000000078h
+MAP_NONE        equ 000000020h
+MAP_SMALLPOINT  equ 00000002Eh
+MAP_BIGPOINT    equ 00000006Fh

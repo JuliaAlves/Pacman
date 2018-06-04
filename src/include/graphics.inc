@@ -7,6 +7,9 @@
 ; Carrega os bitmaps necessários
 graphics_load_bitmaps PROTO :DWORD
 
+; Obtém o contador de frames
+graphics_frame_count PROTO
+
 ; Desenha os objetos do jogo na tela
 graphics_render PROTO :DWORD
 

@@ -137,6 +137,14 @@ graphics_load_bitmaps PROC hInst : DWORD
 	ret
 graphics_load_bitmaps ENDP
 ;------------------------------------------------------------------------------
+; graphics_frame_count
+;
+;		Obtém o contador de frames do jogo
+;------------------------------------------------------------------------------
+graphics_frame_count PROC
+	return frame_count
+graphics_frame_count ENDP
+;------------------------------------------------------------------------------
 ; graphics_render
 ;
 ;		Desenha os objetos do jogo na tela
