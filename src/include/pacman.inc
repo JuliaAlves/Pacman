@@ -13,6 +13,9 @@ pac_init		PROTO
 ; Obtém um atributo de um objeto do jogo
 pac_get_attr	PROTO 	:DWORD, :DWORD
 
+; Define um atributo de um objeto do jogo
+pac_set_attr    PROTO   :DWORD, :DWORD, :DWORD
+
 ; Obtém a passabilidade de uma posição no mapa
 pac_is_passable	PROTO 	:BYTE, :BYTE
 
@@ -45,7 +48,15 @@ DIR_LEFT		equ 000010000h
 DIR_UP			equ 000020000h
 DIR_DOWN		equ 000030000h
 
+; Direção desejada
+TURN_NONE       equ 000000000h
+TURN_RIGHT		equ 000100000h
+TURN_LEFT		equ 000200000h
+TURN_UP			equ 000300000h
+TURN_DOWN		equ 000400000h
+
 ; Códigos de atributo
 ATTR_POSITION   equ 00000FFFFh
-ATTR_DIRECTION 	equ 000FF0000h
+ATTR_DIRECTION 	equ 0000F0000h
+ATTR_TURN       equ 000F00000h
 ATTR_STATE      equ 0FF000000h

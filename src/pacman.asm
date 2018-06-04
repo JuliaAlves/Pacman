@@ -7,6 +7,12 @@
 .model flat, stdcall
 option casemap :none
 
+include \MASM32\INCLUDE\windows.inc
+include \MASM32\INCLUDE\user32.inc
+include \MASM32\INCLUDE\gdi32.inc
+include \MASM32\INCLUDE\kernel32.inc
+include \MASM32\INCLUDE\masm32.inc
+
 include include\macros.inc
 include include\pacman.inc
 
@@ -70,12 +76,60 @@ pac_get_attr PROC id : DWORD, attr : DWORD
     ret
 pac_get_attr ENDP
 ;------------------------------------------------------------------------------
+; pac_set_attr
+;
+;       Define um atributo de um objeto do jogo
+;
+;   id      {DWORD} : ID do objeto
+;   attr    {DWORD} : Atributo desejado
+;   val     {DWORD} : Valor desejado
+;------------------------------------------------------------------------------
+pac_set_attr PROC USES ebx ecx esi id : DWORD, attr : DWORD, val : DWORD
+    mov ebx, offset objects
+    mov esi, id
+
+    mov ebx, dword ptr [ebx + esi]
+
+    mov ecx, attr
+    xor ecx, 0FFFFFFFFh
+
+    and ebx, ecx
+    or  ebx, val
+
+    mov [offset objects + esi], ebx
+
+    ret
+pac_set_attr ENDP
+;------------------------------------------------------------------------------
 ; pac_update
 ;
 ;       Atualiza os objetos do jogo
 ;------------------------------------------------------------------------------
 pac_update PROC
 
+    invoke GetAsyncKeyState, VK_UP
+    shr ax, 15
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_UP
+    .endif
+    
+    invoke GetAsyncKeyState, VK_DOWN
+    shr ax, 15
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_DOWN
+    .endif
+
+    invoke GetAsyncKeyState, VK_RIGHT
+    shr ax, 15
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_RIGHT
+    .endif
+
+    invoke GetAsyncKeyState, VK_LEFT
+    shr ax, 15
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_LEFT
+    .endif
 
     ret
 pac_update ENDP

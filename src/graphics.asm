@@ -110,7 +110,7 @@ BMP_MAPEMPTY	EQU		020h
 BMP_SPRITES		EQU		010h
 
 ; Intervalo entre os frames
-FRAME_INTERVAL	EQU 	256
+FRAME_INTERVAL	EQU 	512
 
 ;==============================================================================
 ; Seção de código
