@@ -7,11 +7,11 @@
 .model flat, stdcall
 option casemap :none
 
-include \MASM32\INCLUDE\windows.inc
-include \MASM32\INCLUDE\user32.inc
-include \MASM32\INCLUDE\gdi32.inc
-include \MASM32\INCLUDE\kernel32.inc
-include \MASM32\INCLUDE\masm32.inc
+include c:\MASM32\INCLUDE\windows.inc
+include c:\MASM32\INCLUDE\user32.inc
+include c:\MASM32\INCLUDE\gdi32.inc
+include c:\MASM32\INCLUDE\kernel32.inc
+include c:\MASM32\INCLUDE\masm32.inc
 
 include include\macros.inc
 include include\pacman.inc
@@ -28,6 +28,9 @@ include include\graphics.inc
     PINKY_START_POS     EQU     0686Ch
     INKY_START_POS      EQU     0586Ch
     CLYDE_START_POS     EQU     0786Ch
+    
+    ; ID da string do mapa
+    ST_MAP              EQU     00030h
 
 ;==============================================================================
 ; Seção de dados
@@ -36,22 +39,9 @@ include include\graphics.inc
     
     objects     DWORD   5   DUP(0)
 
-    map         DWORD   868 "xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                            "x............xx............x",
-                            "x.xxxx.xxxxx.xx.xxxxx.xxxx.x",
-                            "xoxxxx.xxxxx.xx.xxxxx.xxxxox",
-                            "x.xxxx.xxxxx.xx.xxxxx.xxxx.x",
-                            "x..........................x",
-                            "x.xxxx.xx.xxxxxxxx.xx.xxxx.x",
-                            "x.xxxx.xx.xxxxxxxx.xx.xxxx.x",
-                            "x......xx....xx....xx......x",
-                            "xxxxxx.xxxxx xx xxxxx.xxxxxx",
-                            "xxxxxx.xxxxx xx xxxxx.xxxxxx",
-                            "xxxxxx.xx          xx.xxxxxx",
-                            "xxxxxx.xx xxxxxxxx xx.xxxxxx",
-                            "xxxxxx.xx xxxxxxxx xx.xxxxxx",
-                            "      .              .      ",
+.data?
 
+    map         DWORD   ?
 
 ;==============================================================================
 ; Seção de código
@@ -64,6 +54,7 @@ include include\graphics.inc
 ;------------------------------------------------------------------------------
 pac_init PROC
 
+    ; Inicializa os objetos
     mov eax, offset objects
 
     m2m DWORD PTR [eax + PACMAN], STATE_NORMAL or DIR_RIGHT or PACMAN_START_POS
@@ -71,6 +62,14 @@ pac_init PROC
     m2m DWORD PTR [eax + PINKY],  STATE_NORMAL or DIR_DOWN  or PINKY_START_POS
     m2m DWORD PTR [eax + INKY],   STATE_NORMAL or DIR_UP    or INKY_START_POS
     m2m DWORD PTR [eax + CLYDE],  STATE_NORMAL or DIR_UP    or CLYDE_START_POS
+
+    ; Carrega o mapa
+    invoke GetProcessHeap
+    invoke HeapAlloc, eax, 0, 869                    ; Aloca memória para o buffer
+    mov map, eax
+
+    invoke GetModuleHandle, NULL
+    invoke LoadString, eax, ST_MAP, map, 869    ; Carrega o buffer dos resources
 
     xor eax, eax
 
@@ -106,7 +105,7 @@ pac_set_attr PROC USES ebx ecx esi id : DWORD, attr : DWORD, val : DWORD
     mov ebx, offset objects
     mov esi, id
 
-    mov ebx, dword ptr [ebx + esi]
+    mov ebx, DWORD PTR [ebx + esi]
 
     mov ecx, attr
     xor ecx, 0FFFFFFFFh
@@ -131,6 +130,33 @@ pac_keystate PROC key : DWORD
 
     ret
 pac_keystate ENDP
+;------------------------------------------------------------------------------
+; pac_get_mapcell
+;
+;       Obtém o valor de uma célula no mapa
+;
+;   x   {BYTE}  : Posição X
+;   y   {BYTE}  : Posição Y
+;------------------------------------------------------------------------------
+pac_get_mapcell PROC USES ebx esi x : BYTE, y : BYTE
+    mov ebx, offset map
+    
+    xor esi, esi
+
+    xor eax, eax
+    xor ecx, ecx
+    mov cl, y
+    mov eax, 21
+    mul ecx
+
+    xor ecx, ecx
+    mov cl, x
+
+    add eax, ecx
+    mov esi, eax
+
+    return DWORD PTR [ebx + esi]
+pac_get_mapcell ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
 ;

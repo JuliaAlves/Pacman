@@ -8,25 +8,25 @@ echo Compilando recursos...
 
 del "build.log" >nul 2>&1
 
-\masm32\bin\rc /v /fo "obj\rsrc.res" "src\rsrc.rc" >>"build.log" 2>&1
+c:\masm32\bin\rc /v /fo "obj\rsrc.res" "src\rsrc.rc" >>"build.log" 2>&1
 if errorlevel 1 goto :resourceerror
 
 echo Convertendo .RES para .OBJ...
-\masm32\bin\cvtres /machine:ix86 "obj\rsrc.res" /OUT:"obj\rsrc.obj" >>"build.log" 2>&1
+c:\masm32\bin\cvtres /machine:ix86 "obj\rsrc.res" /OUT:"obj\rsrc.obj" >>"build.log" 2>&1
 if errorlevel 1 goto :resourcecvterror
 
 echo Compilando codigo...
-\masm32\bin\ml /c /coff /Fo"obj\graphics.obj" "src\graphics.asm" >>"build.log" 2>&1
+c:\masm32\bin\ml /c /coff /Fo"obj\graphics.obj" "src\graphics.asm" >>"build.log" 2>&1
 if errorlevel 1 goto :compileerror
 
-\masm32\bin\ml /c /coff /Fo"obj\pacman.obj" "src\pacman.asm" >>"build.log" 2>&1
+c:\masm32\bin\ml /c /coff /Fo"obj\pacman.obj" "src\pacman.asm" >>"build.log" 2>&1
 if errorlevel 1 goto :compileerror
 
-\masm32\bin\ml /c /coff /Fo"obj\main.obj" "src\main.asm" >>"build.log" 2>&1
+c:\masm32\bin\ml /c /coff /Fo"obj\main.obj" "src\main.asm" >>"build.log" 2>&1
 if errorlevel 1 goto :compileerror
 
 echo Gerando executavel...
-\masm32\bin\link /SUBSYSTEM:WINDOWS /OPT:NOREF "obj\main.obj" "obj\graphics.obj" "obj\pacman.obj" "obj\rsrc.obj" /OUT:"bin\pacman.exe" >>"build.log" 2>&1
+c:\masm32\bin\link /SUBSYSTEM:WINDOWS /OPT:NOREF "obj\main.obj" "obj\graphics.obj" "obj\pacman.obj" "obj\rsrc.obj" /OUT:"bin\pacman.exe" >>"build.log" 2>&1
 if errorlevel 1 goto :linkerror
 
 echo Executando...

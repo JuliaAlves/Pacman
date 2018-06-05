@@ -9,11 +9,11 @@ option casemap :none
 ;==============================================================================
 ; Cabeçalhos
 ;==============================================================================
-include \MASM32\INCLUDE\windows.inc
-include \MASM32\INCLUDE\user32.inc
-include \MASM32\INCLUDE\gdi32.inc
-include \MASM32\INCLUDE\kernel32.inc
-include \MASM32\INCLUDE\masm32.inc
+include c:\MASM32\INCLUDE\windows.inc
+include c:\MASM32\INCLUDE\user32.inc
+include c:\MASM32\INCLUDE\gdi32.inc
+include c:\MASM32\INCLUDE\kernel32.inc
+include c:\MASM32\INCLUDE\masm32.inc
 
 include include\macros.inc
 include include\graphics.inc
@@ -21,10 +21,10 @@ include include\pacman.inc
 ;==============================================================================
 ; Bibliotecas
 ;==============================================================================
-includelib \MASM32\LIB\masm32.lib
-includelib \MASM32\LIB\gdi32.lib
-includelib \MASM32\LIB\user32.lib
-includelib \MASM32\LIB\kernel32.lib
+includelib c:\MASM32\LIB\masm32.lib
+includelib c:\MASM32\LIB\gdi32.lib
+includelib c:\MASM32\LIB\user32.lib
+includelib c:\MASM32\LIB\kernel32.lib
 ;==============================================================================
 ; Protótipos
 ;==============================================================================
