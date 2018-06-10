@@ -72,6 +72,9 @@ draw_pacman		PROTO
 ; Desenha um fantasma
 draw_ghost		PROTO 	:DWORD
 
+; Desenha o mapa
+draw_map 		PROTO
+
 ;==============================================================================
 ; Seção de dados
 ;==============================================================================
@@ -106,7 +109,10 @@ BMP_MAPEMPTY	EQU		020h
 BMP_SPRITES		EQU		010h
 
 ; Intervalo entre os frames
-FRAME_INTERVAL	EQU 	512
+FRAME_INTERVAL	EQU 	6
+
+; Intervalo da animação (em frames)
+ANIM_INTERVAL	EQU		10
 
 ;==============================================================================
 ; Seção de código
@@ -152,9 +158,9 @@ graphics_render PROC hDC : DWORD
 	invoke begin_draw, hDC
 
 	; Fundo
-	invoke draw_bitmap, 0, bitmap_mapfull, 0, 0, REAL_WIDTH, REAL_HEIGHT
+	invoke draw_map
 
-	;TODO: Desenhar objetos na tela
+	; Desenha os objetos na tela
 
 	invoke draw_pacman
 
@@ -168,13 +174,15 @@ graphics_render PROC hDC : DWORD
 	; Contador de frames
 	inc frame_count
 
-	; MOD intervalo dos frames * 2
+	; MOD ANIM_INTERVAL * 2
 	mov edx, 0
 	mov eax, frame_count
-	mov ebx, FRAME_INTERVAL
+	mov ebx, ANIM_INTERVAL
 	shl ebx, 1
 	div ebx
 	mov frame_count, edx
+
+	invoke Sleep, FRAME_INTERVAL
 
 	return frame_count
 graphics_render ENDP
@@ -300,6 +308,7 @@ draw_pacman PROC
 
 	invoke pac_get_attr, PACMAN, ATTR_POSITION
 	mov pos, eax
+	sub pos, 00707h
 
 	invoke pac_get_attr, PACMAN, ATTR_DIRECTION
 	mov dir, eax
@@ -322,7 +331,7 @@ draw_pacman PROC
 	; Contador de frames DIV intervalo dos frames
 	mov edx, 0
 	mov eax, frame_count
-	mov ebx, FRAME_INTERVAL
+	mov ebx, ANIM_INTERVAL
 	div ebx
 
 	; Calcula a posição X do sprite
@@ -351,6 +360,7 @@ draw_ghost PROC id : DWORD
 	
 	invoke pac_get_attr, id, ATTR_POSITION
 	mov pos, eax
+	sub pos, 7
 
 	invoke pac_get_attr, id, ATTR_DIRECTION
 	mov dir, eax
@@ -372,7 +382,7 @@ draw_ghost PROC id : DWORD
 	; Contador de frames DIV intervalo dos frames
 	mov edx, 0
 	mov eax, frame_count
-	mov ebx, FRAME_INTERVAL
+	mov ebx, ANIM_INTERVAL
 	div ebx
 
 	; Calcula a posição X do sprite
@@ -396,5 +406,43 @@ draw_ghost PROC id : DWORD
 	
 	ret
 draw_ghost ENDP
+;------------------------------------------------------------------------------
+; draw_map
+;
+;		Desenha o mapa do jogo
+;------------------------------------------------------------------------------
+draw_map PROC
+	
+	mov esi, 0
+	.while esi < 868
+
+		xor edx, edx
+		mov eax, esi
+		mov ecx, 28
+		div ecx
+
+		mov ecx, edx
+		mov ebx, eax
+
+		shl ecx, 3
+		shl ebx, 3
+
+		invoke pac_get_mapcell, cl, bl
+
+		mov edx, ebx
+		mov bh, cl
+
+		.if eax == MAP_NONE
+			invoke draw_bitmap, ebx, bitmap_mapempty, ecx, edx, 8, 8
+		.else
+			invoke draw_bitmap, ebx, bitmap_mapfull, ecx, edx, 8, 8
+		.endif
+
+		inc esi
+	.endw
+
+	ret
+
+draw_map ENDP
 
 end

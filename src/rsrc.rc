@@ -24,17 +24,17 @@ x..........................x\
 x.xxxx.xx.xxxxxxxx.xx.xxxx.x\
 x.xxxx.xx.xxxxxxxx.xx.xxxx.x\
 x......xx....xx....xx......x\
-xxxxxx.xxxxx xx xxxxx.xxxxxx\
-xxxxxx.xxxxx xx xxxxx.xxxxxx\
-xxxxxx.xx          xx.xxxxxx\
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
-      .   xxxxxxxx   .      \
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
-xxxxxx.xx          xx.xxxxxx\
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
-xxxxxx.xx xxxxxxxx xx.xxxxxx\
+xxxxxx.xxxxx/xx/xxxxx.xxxxxx\
+xxxxxx.xxxxx/xx/xxxxx.xxxxxx\
+xxxxxx.xx//////////xx.xxxxxx\
+xxxxxx.xx/xxx//xxx/xx.xxxxxx\
+xxxxxx.xx/xxx//xxx/xx.xxxxxx\
+//////.///x//////x///.//////\
+xxxxxx.xx/xxxxxxxx/xx.xxxxxx\
+xxxxxx.xx/xxxxxxxx/xx.xxxxxx\
+xxxxxx.xx//////////xx.xxxxxx\
+xxxxxx.xx/xxxxxxxx/xx.xxxxxx\
+xxxxxx.xx/xxxxxxxx/xx.xxxxxx\
 x............xx............x\
 x.xxxx.xxxxx.xx.xxxxx.xxxx.x\
 x.xxxx.xxxxx.xx.xxxxx.xxxx.x\
@@ -45,7 +45,6 @@ x......xx....xx....xx......x\
 x.xxxxxxxxxx.xx.xxxxxxxxxx.x\
 x.xxxxxxxxxx.xx.xxxxxxxxxx.x\
 x..........................x\
-xxxxxxxxxxxxxxxxxxxxxxxxxxxx\
-"
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 END

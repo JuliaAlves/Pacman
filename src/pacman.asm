@@ -17,20 +17,42 @@ include include\macros.inc
 include include\pacman.inc
 include include\graphics.inc
 
+include c:\MASM32\INCLUDE\msvcrt.inc
+includelib c:\MASM32\LIB\msvcrt.lib
+
+;==============================================================================
+; Protótipos
+;==============================================================================
+
+; Atualiza a direção do Pacman
+pacman_direction_update PROTO
+
+; Atualiza a direção de um fantasma
+ghost_direction_update PROTO :DWORD
+
+; Atualiza a posição de um objeto do jogo
+pac_position_update PROTO :DWORD
+
+; Atualiza o giro de um objeto do jogo
+pac_turn_update PROTO :DWORD
+
 ;==============================================================================
 ; Constantes
 ;==============================================================================
 .const
 
     ; Posição inicial dos objetos   (0XXYYh)
-    PACMAN_START_POS    EQU     068B4h
-    BLINKY_START_POS    EQU     06854h
-    PINKY_START_POS     EQU     0686Ch
-    INKY_START_POS      EQU     0586Ch
-    CLYDE_START_POS     EQU     0786Ch
+    PACMAN_START_POS        EQU     068B8h
+    BLINKY_START_POS        EQU     06858h
+    PINKY_START_POS         EQU     0686Ch
+    INKY_START_POS          EQU     0586Ch
+    CLYDE_START_POS         EQU     0786Ch
     
     ; ID da string do mapa
-    ST_MAP              EQU     00030h
+    ST_MAP                  EQU     00030h
+
+    ; Intervalo de movimento em frames
+    MOVEMENT_FRAME_INTERVAL EQU     2
 
 ;==============================================================================
 ; Seção de dados
@@ -38,10 +60,7 @@ include include\graphics.inc
 .data
     
     objects     DWORD   5   DUP(0)
-
-.data?
-
-    map         DWORD   ?
+    map         DWORD   0
 
 ;==============================================================================
 ; Seção de código
@@ -57,15 +76,14 @@ pac_init PROC
     ; Inicializa os objetos
     mov eax, offset objects
 
-    m2m DWORD PTR [eax + PACMAN], STATE_NORMAL or DIR_RIGHT or PACMAN_START_POS
-    m2m DWORD PTR [eax + BLINKY], STATE_NORMAL or DIR_LEFT  or BLINKY_START_POS
-    m2m DWORD PTR [eax + PINKY],  STATE_NORMAL or DIR_DOWN  or PINKY_START_POS
-    m2m DWORD PTR [eax + INKY],   STATE_NORMAL or DIR_UP    or INKY_START_POS
-    m2m DWORD PTR [eax + CLYDE],  STATE_NORMAL or DIR_UP    or CLYDE_START_POS
+    m2m DWORD PTR [eax + PACMAN], STATE_NORMAL or DIR_RIGHT or PACMAN_START_POS or TURN_NONE
+    m2m DWORD PTR [eax + BLINKY], STATE_NORMAL or DIR_LEFT  or BLINKY_START_POS or TURN_NONE
+    m2m DWORD PTR [eax + PINKY],  STATE_NORMAL or DIR_UP    or PINKY_START_POS  or TURN_NONE
+    m2m DWORD PTR [eax + INKY],   STATE_NORMAL or DIR_UP    or INKY_START_POS   or TURN_NONE
+    m2m DWORD PTR [eax + CLYDE],  STATE_NORMAL or DIR_UP    or CLYDE_START_POS  or TURN_NONE
 
     ; Carrega o mapa
-    invoke GetProcessHeap
-    invoke HeapAlloc, eax, 0, 869                    ; Aloca memória para o buffer
+    invoke crt_malloc, 869                      ; Aloca memória para o buffer
     mov map, eax
 
     invoke GetModuleHandle, NULL
@@ -135,83 +153,285 @@ pac_keystate ENDP
 ;
 ;       Obtém o valor de uma célula no mapa
 ;
-;   x   {BYTE}  : Posição X
-;   y   {BYTE}  : Posição Y
+;   x   {BYTE}  : Posição X (em píxels)
+;   y   {BYTE}  : Posição Y (em píxels)
 ;------------------------------------------------------------------------------
-pac_get_mapcell PROC USES ebx esi x : BYTE, y : BYTE
-    mov ebx, offset map
-    
-    xor esi, esi
+pac_get_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE
+
+    ; Posições X e Y do mapa (em células)
+    LOCAL cellX : BYTE, cellY : BYTE
+
+    ; Divide as posições em píxel para obter as posições das células
+    mov ecx, 8
 
     xor eax, eax
-    xor ecx, ecx
-    mov cl, y
-    mov eax, 21
+    xor edx, edx
+    mov al, x
+    div ecx
+    mov cellX, al
+
+    xor eax, eax
+    xor edx, edx
+    mov al, y
+    div ecx
+    mov cellY, al
+
+    ; Calcula o offset da célula na string
+    xor eax, eax
+    xor edx, edx
+
+    mov al, cellY
+    mov ecx, 28
     mul ecx
-
-    xor ecx, ecx
-    mov cl, x
-
-    add eax, ecx
     mov esi, eax
 
-    return DWORD PTR [ebx + esi]
+    xor eax, eax
+    xor edx, edx
+
+    mov al, cellX
+    add esi, eax
+
+    mov ebx, map
+
+    xor eax, eax
+    mov al, BYTE PTR [ebx + esi]
+
+    ret 
 pac_get_mapcell ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
 ;
 ;       Atualiza os objetos do jogo
 ;------------------------------------------------------------------------------
-pac_update PROC
+pac_update PROC USES edx ecx
 
-    invoke pac_keystate, VK_UP
-    .if ax == 1
-        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_UP
-    .endif
-    
-    invoke pac_keystate, VK_DOWN
-    .if ax == 1
-        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_DOWN
-    .endif
+    invoke pacman_direction_update
 
-    invoke pac_keystate, VK_RIGHT
-    .if ax == 1
-        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_RIGHT
-    .endif
+    invoke ghost_direction_update, BLINKY
+    invoke ghost_direction_update, PINKY
+    invoke ghost_direction_update, INKY
+    invoke ghost_direction_update, CLYDE
 
-    invoke pac_keystate, VK_LEFT
-    .if ax == 1
-        invoke pac_set_attr, PACMAN, ATTR_DIRECTION, DIR_LEFT
-    .endif
-
-    ; Movimento
+    ; Aplica o movimento
     invoke graphics_frame_count
 
     xor     edx, edx
-    mov     ecx, 64
+    mov     ecx, MOVEMENT_FRAME_INTERVAL
     div     ecx
 
     .if edx == 0
-        invoke pac_get_attr, PACMAN, ATTR_POSITION
-        mov ecx, eax
-        
-        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+        invoke pac_turn_update, PACMAN
+        invoke pac_turn_update, BLINKY
+        invoke pac_turn_update, PINKY
+        invoke pac_turn_update, INKY
+        invoke pac_turn_update, CLYDE
 
-        .if eax == DIR_UP
-            dec cl
-        .elseif eax == DIR_DOWN
-            inc cl
-        .elseif eax == DIR_RIGHT
-            inc ch
-        .elseif eax == DIR_LEFT
-            dec ch
-        .endif
-
-        invoke pac_set_attr, PACMAN, ATTR_POSITION, ecx
+        invoke pac_position_update, PACMAN
+        invoke pac_position_update, BLINKY
+        invoke pac_position_update, PINKY
+        invoke pac_position_update, INKY
+        invoke pac_position_update, CLYDE
     .endif
 
     ret
 pac_update ENDP
+;------------------------------------------------------------------------------
+; pacman_direction_update
+;
+;       Atualiza a direção do pacman
+;------------------------------------------------------------------------------
+pacman_direction_update PROC
+    invoke pac_keystate, VK_UP
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_TURN, TURN_UP
+    .endif
+    
+    invoke pac_keystate, VK_DOWN
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_TURN, TURN_DOWN
+    .endif
+
+    invoke pac_keystate, VK_RIGHT
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_TURN, TURN_RIGHT
+    .endif
+
+    invoke pac_keystate, VK_LEFT
+    .if ax == 1
+        invoke pac_set_attr, PACMAN, ATTR_TURN, TURN_LEFT
+    .endif
+
+    ret
+pacman_direction_update ENDP
+;------------------------------------------------------------------------------
+; ghost_direction_update
+;
+;       Atualiza a posição de um fantasma
+;
+;   id  {DWORD} : ID do fantasma
+;------------------------------------------------------------------------------
+ghost_direction_update PROC id : DWORD
+    ret
+ghost_direction_update ENDP
+;------------------------------------------------------------------------------
+; pac_position_update
+;
+;       Atualiza a posição de um objeto do jogo
+;
+;   id  {DWORD} : ID do objeto a ser atualizado
+;------------------------------------------------------------------------------
+pac_position_update PROC USES ebx ecx edx id : DWORD
+    invoke pac_get_attr, id, ATTR_POSITION
+    mov ecx, eax
+    
+    invoke pac_get_attr, id, ATTR_DIRECTION
+
+    .if eax == DIR_UP
+
+        push ecx    ; Salva a posição anterior
+
+        ; Anda para baixo
+        dec cl
+
+        .if cl == 0FFh
+            mov cl, 240
+        .endif
+
+        ; Se for uma parede, volta para onde estava
+        invoke pac_get_mapcell, ch, cl
+
+        .if eax == MAP_WALL
+            pop ecx
+        .else
+            pop edx
+        .endif
+        
+    .elseif eax == DIR_DOWN
+
+        push ecx    ; Salva a posição anterior
+
+        inc cl
+        
+        xor     edx, edx
+        xor     eax, eax
+        mov     al, cl
+        mov     ebx, 248
+        div     ebx
+        mov     cl, dl
+        
+        ; Se for uma parede, volta para onde estava
+        invoke pac_get_mapcell, ch, cl
+
+        .if eax == MAP_WALL
+            pop ecx
+        .else
+            pop edx
+        .endif
+
+    .elseif eax == DIR_RIGHT
+
+        push ecx    ; Salva a posição anterior
+
+        inc ch
+        
+        xor     edx, edx
+        xor     eax, eax
+        mov     al, ch
+        mov     ebx, 224
+        div     ebx
+        mov     ch, dl
+
+        ; Se for uma parede, volta para onde estava
+        invoke pac_get_mapcell, ch, cl
+
+        .if eax == MAP_WALL
+            pop ecx
+        .else
+            pop edx
+        .endif
+
+    .elseif eax == DIR_LEFT
+
+        push ecx    ; Salva a posição anterior
+
+        dec ch
+
+        .if ch == 0FFh
+            mov ch, 216
+        .endif
+
+        ; Se for uma parede, volta para onde estava
+        invoke pac_get_mapcell, ch, cl
+
+        .if eax == MAP_WALL
+            pop ecx
+        .else
+            pop edx
+        .endif
+
+    .endif
+
+    invoke pac_set_attr, id, ATTR_POSITION, ecx
+
+    ret
+pac_position_update ENDP
+;------------------------------------------------------------------------------
+; pac_turn_update
+;
+;       Atualiza o giro de um objeto do jogo
+;
+;   id  {DWORD} : ID do objeto a ser atualizado
+;------------------------------------------------------------------------------
+pac_turn_update PROC id : DWORD
+    invoke pac_get_attr, id, ATTR_TURN
+    .if eax == TURN_UP
+
+        invoke pac_get_attr, id, ATTR_POSITION
+        mov ebx, eax
+        sub bl, 8
+
+        invoke pac_get_mapcell, bh, bl
+        .if eax != MAP_WALL
+            invoke pac_set_attr, id, ATTR_DIRECTION, DIR_UP
+        .endif
+
+    .elseif eax == TURN_DOWN
+
+        invoke pac_get_attr, id, ATTR_POSITION
+        mov ebx, eax
+        add bl, 8
+
+        invoke pac_get_mapcell, bh, bl
+        .if eax != MAP_WALL
+            invoke pac_set_attr, id, ATTR_DIRECTION, DIR_DOWN
+        .endif
+
+    .elseif eax == TURN_LEFT
+
+        invoke pac_get_attr, id, ATTR_POSITION
+        mov ebx, eax
+        sub bh, 8
+
+        invoke pac_get_mapcell, bh, bl
+        .if eax != MAP_WALL
+            invoke pac_set_attr, id, ATTR_DIRECTION, DIR_LEFT
+        .endif
+
+    .elseif eax == TURN_RIGHT
+        
+        invoke pac_get_attr, id, ATTR_POSITION
+        mov ebx, eax
+        add bh, 8
+
+        invoke pac_get_mapcell, bh, bl
+        .if eax != MAP_WALL
+            invoke pac_set_attr, id, ATTR_DIRECTION, DIR_RIGHT
+        .endif
+
+    .endif
+
+    ret
+pac_turn_update ENDP
 ;------------------------------------------------------------------------------
 ; pac_finish
 ;
