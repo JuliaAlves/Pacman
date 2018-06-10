@@ -22,11 +22,14 @@ if errorlevel 1 goto :compileerror
 c:\masm32\bin\ml /c /coff /Fo"obj\pacman.obj" "src\pacman.asm" >>"build.log" 2>&1
 if errorlevel 1 goto :compileerror
 
+c:\masm32\bin\ml /c /coff /Fo"obj\sound.obj" "src\sound.asm" >>"build.log" 2>&1
+if errorlevel 1 goto :compileerror
+
 c:\masm32\bin\ml /c /coff /Fo"obj\main.obj" "src\main.asm" >>"build.log" 2>&1
 if errorlevel 1 goto :compileerror
 
 echo Gerando executavel...
-c:\masm32\bin\link /SUBSYSTEM:WINDOWS /OPT:NOREF "obj\main.obj" "obj\graphics.obj" "obj\pacman.obj" "obj\rsrc.obj" /OUT:"bin\pacman.exe" >>"build.log" 2>&1
+c:\masm32\bin\link /SUBSYSTEM:WINDOWS /OPT:NOREF "obj\main.obj" "obj\sound.obj" "obj\graphics.obj" "obj\pacman.obj" "obj\rsrc.obj" /OUT:"bin\pacman.exe" >>"build.log" 2>&1
 if errorlevel 1 goto :linkerror
 
 echo Executando...

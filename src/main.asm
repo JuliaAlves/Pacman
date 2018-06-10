@@ -18,6 +18,7 @@ include c:\MASM32\INCLUDE\masm32.inc
 include include\macros.inc
 include include\graphics.inc
 include include\pacman.inc
+include include\sound.inc
 ;==============================================================================
 ; Bibliotecas
 ;==============================================================================
@@ -63,12 +64,13 @@ on_destroy 				PROTO :DWORD
 ;==============================================================================
 .const
 
-	RC_ICON			EQU		01h
+	RC_ICON			EQU		001h
 
 	WND_CLASS_NAME	EQU		"PacMan", 0
 	WND_TITLE		EQU		"Pac Man", 0
 	WND_WIDTH		EQU		454
 	WND_HEIGHT		EQU		525
+
 ;==============================================================================
 ; Seção de código
 ;==============================================================================
@@ -233,6 +235,7 @@ WndProc ENDP
 on_create PROC hWnd : DWORD
 
 	call 	pac_init
+	invoke  sound_load, this_instance
 	invoke 	graphics_load_bitmaps, this_instance
 
 	ret
@@ -255,12 +258,13 @@ on_render PROC hWnd : DWORD
 
 	; Atualiza e renderiza o jogo
 	call 	pac_update
+	call 	sound_update
 	invoke 	graphics_render, hDC
 
 	; Finaliza o desenho e libera os recursor
 	invoke 	EndPaint, hWnd, ADDR Ps
 
-	; Invalida de novo, para chamar a função a 16 fps
+	; Invalida de novo, para chamar a função infinitamente
 	invoke 	InvalidateRect, hWnd, NULL, FALSE
 
 	ret

@@ -1,16 +1,20 @@
-#define RC_ICON         0x01
+#define RC_ICON             0x01
 
-#define RC_SPRITE       0x10
-#define RC_MAP_FULL     0x21
-#define RC_MAP_EMPTY    0x20
+#define RC_SPRITE           0x10
+#define RC_MAP_FULL         0x21
+#define RC_MAP_EMPTY        0x20
 
-#define ST_MAP          0x30
+#define ST_MAP              0x30
 
-RC_ICON         ICON    "../res/mainicon.ico"
+#define SND_PACMAN_CHOMP    0x40
 
-RC_SPRITE       BITMAP  "../res/sprite.bmp"
-RC_MAP_FULL     BITMAP  "../res/mapfull.bmp"
-RC_MAP_EMPTY    BITMAP  "../res/mapempty.bmp"
+RC_ICON             ICON    "../res/mainicon.ico"
+
+RC_SPRITE           BITMAP  "../res/sprite.bmp"
+RC_MAP_FULL         BITMAP  "../res/mapfull.bmp"
+RC_MAP_EMPTY        BITMAP  "../res/mapempty.bmp"
+
+SND_PACMAN_CHOMP    WAVE    "../res/wakawaka.wav"
 
 STRINGTABLE
 BEGIN

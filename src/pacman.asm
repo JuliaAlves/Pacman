@@ -101,7 +101,7 @@ pac_init ENDP
 ;   id      {DWORD} : ID do objeto
 ;   attr    {DWORD} : Atributo desejado
 ;------------------------------------------------------------------------------
-pac_get_attr PROC id : DWORD, attr : DWORD
+pac_get_attr PROC USES ebx esi id : DWORD, attr : DWORD
     mov ebx, offset objects
     mov esi, id
     
@@ -160,6 +160,14 @@ pac_get_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE
 
     ; Posições X e Y do mapa (em células)
     LOCAL cellX : BYTE, cellY : BYTE
+
+    .if x >= 224
+        sub x, 224
+    .endif
+    
+    .if y >= 248
+        sub y, 248
+    .endif
 
     ; Divide as posições em píxel para obter as posições das células
     mov ecx, 8
@@ -320,7 +328,9 @@ pac_position_update PROC USES ebx ecx edx id : DWORD
         mov     cl, dl
         
         ; Se for uma parede, volta para onde estava
+        add cl, 7
         invoke pac_get_mapcell, ch, cl
+        sub cl, 7
 
         .if eax == MAP_WALL
             pop ecx
@@ -342,7 +352,9 @@ pac_position_update PROC USES ebx ecx edx id : DWORD
         mov     ch, dl
 
         ; Se for uma parede, volta para onde estava
+        add ch, 7
         invoke pac_get_mapcell, ch, cl
+        sub ch, 7
 
         .if eax == MAP_WALL
             pop ecx
@@ -382,13 +394,41 @@ pac_position_update ENDP
 ;
 ;   id  {DWORD} : ID do objeto a ser atualizado
 ;------------------------------------------------------------------------------
-pac_turn_update PROC id : DWORD
+pac_turn_update PROC USES ebx ecx edx id : DWORD
     invoke pac_get_attr, id, ATTR_TURN
+
     .if eax == TURN_UP
 
         invoke pac_get_attr, id, ATTR_POSITION
         mov ebx, eax
+
+        ; Se estiver indo para a direção oposta, não muda de direção até bater
+        ; na parede
+        invoke pac_get_attr, id, ATTR_DIRECTION
+        .if eax == DIR_DOWN
+            push ebx
+
+            add bl, 8
+            invoke pac_get_mapcell, bh, bl
+            .if eax != MAP_WALL
+                pop ebx
+                ret
+            .endif
+
+            pop ebx
+        .endif
+
+        ; Simula o movimento e vê se é possível, se for, então muda a direção
         sub bl, 8
+
+        ; Como o pacman não é um ponto, precisamos testar duas posições (os 
+        ; vértices do retângulo que podem bater em uma parede com o movimento)
+        invoke pac_get_mapcell, bh, bl
+        .if eax == MAP_WALL
+            ret
+        .endif
+
+        add bh, 7
 
         invoke pac_get_mapcell, bh, bl
         .if eax != MAP_WALL
@@ -399,7 +439,34 @@ pac_turn_update PROC id : DWORD
 
         invoke pac_get_attr, id, ATTR_POSITION
         mov ebx, eax
+
+        ; Se estiver indo para a direção oposta, não muda de direção até bater
+        ; na parede
+        invoke pac_get_attr, id, ATTR_DIRECTION
+        .if eax == DIR_UP
+            push ebx
+
+            sub bl, 1
+            invoke pac_get_mapcell, bh, bl
+            .if eax != MAP_WALL
+                pop ebx
+                ret
+            .endif
+
+            pop ebx
+        .endif
+
+        ; Simula o movimento e vê se é possível, se for, então muda a direção
         add bl, 8
+
+        ; Como o pacman não é um ponto, precisamos testar duas posições (os 
+        ; vértices do retângulo que podem bater em uma parede com o movimento)
+        invoke pac_get_mapcell, bh, bl
+        .if eax == MAP_WALL
+            ret
+        .endif
+
+        add bh, 7
 
         invoke pac_get_mapcell, bh, bl
         .if eax != MAP_WALL
@@ -410,7 +477,34 @@ pac_turn_update PROC id : DWORD
 
         invoke pac_get_attr, id, ATTR_POSITION
         mov ebx, eax
+
+        ; Se estiver indo para a direção oposta, não muda de direção até bater
+        ; na parede
+        invoke pac_get_attr, id, ATTR_DIRECTION
+        .if eax == DIR_RIGHT
+            push ebx
+
+            add bh, 8
+            invoke pac_get_mapcell, bh, bl
+            .if eax != MAP_WALL
+                pop ebx
+                ret
+            .endif
+
+            pop ebx
+        .endif
+
+        ; Simula o movimento e vê se é possível, se for, então muda a direção
         sub bh, 8
+
+        ; Como o pacman não é um ponto, precisamos testar duas posições (os 
+        ; vértices do retângulo que podem bater em uma parede com o movimento)
+        invoke pac_get_mapcell, bh, bl
+        .if eax == MAP_WALL
+            ret
+        .endif
+
+        add bl, 7
 
         invoke pac_get_mapcell, bh, bl
         .if eax != MAP_WALL
@@ -421,7 +515,34 @@ pac_turn_update PROC id : DWORD
         
         invoke pac_get_attr, id, ATTR_POSITION
         mov ebx, eax
+
+        ; Se estiver indo para a direção oposta, não muda de direção até bater
+        ; na parede
+        invoke pac_get_attr, id, ATTR_DIRECTION
+        .if eax == DIR_LEFT
+            push ebx
+
+            sub bh, 1
+            invoke pac_get_mapcell, bh, bl
+            .if eax != MAP_WALL
+                pop ebx
+                ret
+            .endif
+
+            pop ebx
+        .endif
+
+        ; Simula o movimento e vê se é possível, se for, então muda a direção
         add bh, 8
+        
+        ; Como o pacman não é um ponto, precisamos testar duas posições (os 
+        ; vértices do retângulo que podem bater em uma parede com o movimento)
+        invoke pac_get_mapcell, bh, bl
+        .if eax == MAP_WALL
+            ret
+        .endif
+
+        add bl, 7
 
         invoke pac_get_mapcell, bh, bl
         .if eax != MAP_WALL

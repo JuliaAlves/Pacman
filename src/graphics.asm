@@ -109,10 +109,10 @@ BMP_MAPEMPTY	EQU		020h
 BMP_SPRITES		EQU		010h
 
 ; Intervalo entre os frames
-FRAME_INTERVAL	EQU 	6
+FRAME_INTERVAL	EQU 	3
 
 ; Intervalo da animação (em frames)
-ANIM_INTERVAL	EQU		10
+ANIM_INTERVAL	EQU		13
 
 ;==============================================================================
 ; Seção de código
@@ -308,7 +308,7 @@ draw_pacman PROC
 
 	invoke pac_get_attr, PACMAN, ATTR_POSITION
 	mov pos, eax
-	sub pos, 00707h
+	sub pos, 00404h
 
 	invoke pac_get_attr, PACMAN, ATTR_DIRECTION
 	mov dir, eax
@@ -360,7 +360,7 @@ draw_ghost PROC id : DWORD
 	
 	invoke pac_get_attr, id, ATTR_POSITION
 	mov pos, eax
-	sub pos, 7
+	sub pos, 4
 
 	invoke pac_get_attr, id, ATTR_DIRECTION
 	mov dir, eax
