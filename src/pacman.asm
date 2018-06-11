@@ -410,6 +410,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, PINKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; PERDEU
             .endif
         .endif
     .endif
@@ -427,6 +428,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, INKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; PERDEU
             .endif
         .endif
     .endif
@@ -444,6 +446,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; PERDEU
             .endif
         .endif
     .endif
