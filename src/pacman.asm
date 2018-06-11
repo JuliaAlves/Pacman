@@ -392,6 +392,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; PERDEU
             .endif
         .endif
     .endif
@@ -475,7 +476,7 @@ pac_points_update PROC
     .endif
 
     .if pontos == 242
-        
+        invoke ExitProcess, 0 ; GANHOU
     .endif
 
     ret
