@@ -25,6 +25,9 @@ pac_get_mapcell PROTO   :BYTE, :BYTE
 ; Atualiza os objetos jogo
 pac_update		PROTO
 
+; Atualiza os objetos jogo
+pac_collision_update		PROTO
+
 ; Finaliza o jogo
 pac_finish		PROTO
 
