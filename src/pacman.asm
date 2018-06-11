@@ -32,8 +32,8 @@ includelib libAStar.dll.lib
 ; Library:						AStar.lib
 ; DLL:							AStar.dll
 ;------------------------------------------------------------------------------
-AStarFindPath PROTO :DWORD, :DWORD,
-                    :DWORD, :DWORD,
+AStarFindPath PROTO :BYTE, :BYTE,
+                    :BYTE, :BYTE,
                     :DWORD
 ;==============================================================================
 ; Protótipos
@@ -114,7 +114,7 @@ pac_init PROC
 
     ; Carrega o mapa usado para calcular o menor caminho entre dois pontos
     invoke GetModuleHandle, NULL
-    invoke LoadString, eax, ST_MAP, map, 869    ; Carrega o buffer dos resources
+    invoke LoadString, eax, ST_MAP, pass_map, 869    ; Carrega o buffer dos resources
 
     mov ebx, pass_map
     mov esi, 0
@@ -248,11 +248,6 @@ pac_update PROC USES edx ecx
 
     invoke pacman_direction_update
 
-    invoke ghost_direction_update, BLINKY
-    invoke ghost_direction_update, PINKY
-    invoke ghost_direction_update, INKY
-    invoke ghost_direction_update, CLYDE
-
     ; Aplica o movimento
     invoke graphics_frame_count
 
@@ -266,6 +261,11 @@ pac_update PROC USES edx ecx
         invoke pac_turn_update, PINKY
         invoke pac_turn_update, INKY
         invoke pac_turn_update, CLYDE
+
+        invoke ghost_direction_update, BLINKY
+        invoke ghost_direction_update, PINKY
+        invoke ghost_direction_update, INKY
+        invoke ghost_direction_update, CLYDE
 
         invoke pac_position_update, PACMAN
         invoke pac_position_update, BLINKY
@@ -311,7 +311,7 @@ pacman_direction_update ENDP
 ;
 ;   id  {DWORD} : ID do fantasma
 ;------------------------------------------------------------------------------
-ghost_direction_update PROC id : DWORD
+ghost_direction_update PROC USES ebx ecx esi id : DWORD
     
     LOCAL dstX : BYTE, dstY : BYTE,
           ghostX : BYTE, ghostY : BYTE,
@@ -331,57 +331,72 @@ ghost_direction_update PROC id : DWORD
     mov ghostY, al
     shr ghostX, 3
     shr ghostY, 3
+    
+    xor eax, eax
+    mov al, dstY
+    mov edi, 28
+    mul edi
+    add al, dstX
+    mov edi, eax
+
+    ; Marca o pacman como impassável
+    invoke GetModuleHandle, NULL
+    invoke LoadString, eax, ST_MAP, pass_map, 869    ; Carrega o buffer dos resources
+    mov ebx, pass_map
+    mov esi, 0
+    .while esi < 868
+        .if BYTE PTR [ebx + esi] == MAP_WALL
+            mov BYTE PTR [ebx + esi], 0
+        .elseif esi == edi
+            mov BYTE PTR [ebx + esi], 0
+        .else
+            mov BYTE PTR [ebx + esi], 1
+        .endif
+
+        inc esi
+    .endw
 
     ; Fantasma vermelho
     ; Segue o pacman por trás
     .if id == BLINKY
 
+        mov ch, dstX
+        mov cl, dstY
+
         invoke pac_get_attr, PACMAN, ATTR_DIRECTION
-        
         .if eax == DIR_UP
-            inc dstY
+            inc cl
         .elseif eax == DIR_DOWN
-            dec dstY
+            dec cl
         .elseif eax == DIR_RIGHT
-            dec dstX
+            dec ch
         .elseif eax == DIR_LEFT
-            inc dstX
+            inc ch
         .endif
 
-        mov bh, dstX
-        mov bl, dstY
-
-        invoke find_path, ghostX, ghostY, bh, bl
+        invoke find_path, ghostX, ghostY, ch, cl
         mov turn, eax
 
     ; Fantasma rosa
     ; Segue o pacman pela frente
     .elseif id == PINKY
 
-        invoke pac_get_attr, PACMAN, ATTR_TURN
+        mov ch, dstX
+        mov cl, dstY
         
-        .if eax == TURN_UP
-            dec dstY
-        .elseif eax == TURN_DOWN
-            inc dstY
-        .elseif eax == TURN_RIGHT
-            inc dstX
-        .elseif eax == TURN_LEFT
-            dec dstX
+        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+        .if eax == DIR_UP
+            dec cl
+        .elseif eax == DIR_DOWN
+            inc cl
+        .elseif eax == DIR_RIGHT
+            inc ch
+        .elseif eax == DIR_LEFT
+            dec ch
         .endif
-        
-        mov ah, dstX
-        mov al, dstY
 
-        .if al > ghostY
-            mov turn, TURN_DOWN
-        .elseif al < ghostY
-            mov turn, TURN_UP
-        .elseif ah > ghostX
-            mov turn, TURN_RIGHT
-        .elseif ah < ghostX
-            mov turn, TURN_LEFT
-        .endif
+        invoke find_path, ghostX, ghostY, ch, cl
+        mov turn, eax
 
     ; Fantasma azul
     ; Flick: de vez em quando segue o pacman, de vez em quando é noiado
@@ -409,32 +424,30 @@ ghost_direction_update ENDP
 ;------------------------------------------------------------------------------
 find_path PROC USES ebx ecx edx esi srcX : BYTE, srcY : BYTE, dstX : BYTE, dstY : BYTE
 
-    
+    invoke AStarFindPath, srcX, srcY, dstX, dstY, pass_map
 
-    mov esi, eax
-
-    ; Converte o índice em uma posição
-    xor eax, eax
-    xor edx, edx
+    ; Converte o ID para posições
     mov ecx, 28
-    mov eax, esi
     div ecx
 
-    mov bh, dl
-    mov bl, al
+    xor ebx, ebx
+    mov dstX, dl
+    mov dstY, al
 
-    ; Pega a direção a se virar para a direção
+    mov bh, dstX
+    mov bl, dstY
+
     .if bh > srcX
-        mov eax, TURN_RIGHT
+        return TURN_RIGHT
     .elseif bh < srcX
-        mov eax, TURN_LEFT
+        return TURN_LEFT
     .elseif bl > srcY
-        mov eax, TURN_DOWN
-    .else
-        mov eax, TURN_UP
+        return TURN_DOWN
+    .elseif bl < srcY
+        return TURN_UP
     .endif
 
-    ret
+    return TURN_NONE
 find_path ENDP
 ;------------------------------------------------------------------------------
 ; pac_position_update
