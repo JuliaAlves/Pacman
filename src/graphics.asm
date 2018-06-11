@@ -111,7 +111,7 @@ BMP_MAPEMPTY	EQU		020h
 BMP_SPRITES		EQU		010h
 
 ; Intervalo entre os frames
-FRAME_INTERVAL	EQU 	3
+FRAME_INTERVAL	EQU 	5
 
 ; Intervalo da animação (em frames)
 ANIM_INTERVAL	EQU		13
@@ -161,6 +161,9 @@ graphics_render PROC hDC : DWORD
 
 	; Fundo
 	invoke draw_map
+
+	invoke draw_score
+
 
 	; Desenha os objetos na tela
 	invoke draw_pacman
@@ -300,75 +303,108 @@ draw_bitmap ENDP
 ;	
 ;		Desenha o score
 ;------------------------------------------------------------------------------
-draw_score PROC
+draw_score PROC uses ebx ecx eax edx edi
     LOCAL srcX : DWORD
     LOCAL srcY : DWORD
     LOCAL pos  : DWORD
+	LOCAL score : DWORD
+
+	mov srcY, 208
 
     invoke pacman_get_pontos
-    mov ecx, eax
-    mov edi, 0 ;quantos 0
+    mov score, eax 
+	mov esi, 8
 
-    x_inc:
-        inc edi
-        mov ecx, eax
+	.while score > 0
+		xor edx, edx
+		mov eax, score
+		mov ebx, 10
+		div ebx
 
-        ; mod
-        xor eax, eax
-        xor edx, edx
-        mov eax, ecx
-        mov ebx, 10
-        div ebx
+		mov score, eax
 
-        cmp edx, 0
-        je x_inc
-        jne x_n_inc
+		; EDX
+		mov srcX, edx
+		shl srcX, 3
 
-    x_n_inc:
+		mov ebx, 0
 
-        dec ecx
+		mov ecx, esi
+		mov bh, cl
+		shl bh, 3
 
-        xor eax, eax
-        xor ebx, ebx
-        mov eax, ecx
-        mov ebx, 8
-        mul ebx
+		mov bl, 0
 
-        mov DWORD ptr srcX, eax
+        invoke draw_bitmap, ebx, bitmap_sprites, srcX, srcY, 8, 8
 
-        mov DWORD ptr srcY, 208
+		dec esi
+	.endw
 
-        mov ebx, 0
+    ; mov edi, 0 ;quantos 0
 
-        mov DWORD ptr pos, ebx
+    ; x_inc:
+    ;     inc edi
+    ;     mov ecx, eax
 
-        invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
+    ;     ; mod
+    ;     xor eax, eax
+    ;     xor edx, edx
+    ;     mov eax, ecx
+    ;     mov ebx, 10
+    ;     div ebx
 
-        mov DWORD ptr srcX, 0
+    ;     cmp edx, 0
+    ;     je x_inc
+    ;     jne x_n_inc
 
-        inc edx
-    zeros:
-        dec edx
-        cmp edx, 0
-        jne print
-        je ok
+    ; x_n_inc:
 
-    print:
-        xor eax, eax
-        xor ecx, ecx
-        mov al, bh
-        mov ecx, 8
-        mul ebx
+    ;     xor eax, eax
+    ;     xor ebx, ebx
+    ;     mov eax, ecx
+    ;     mov ebx, 8
+    ;     mul ebx
 
-        mov bl, al
+    ;     mov DWORD ptr srcX, eax
 
-        mov DWORD ptr pos, ebx
-        invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
+    ;     mov DWORD ptr srcY, 208
 
-    ok:
+    ;     mov ebx, 0
+    ;     mov bl, 0
 
+    ;     mov DWORD ptr pos, ebx
 
+    ;     invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
 
+    ;     mov DWORD ptr srcX, 0
+
+    ;     inc edi
+    ; zeros:
+    ;     dec edi
+    ;     cmp edi, 0
+    ;     jne print
+    ;     je ok
+
+    ; print:
+
+    ;     xor eax, eax
+    ;     xor ecx, ecx
+    ;     ;mov al, bh
+    ;     ;mov ecx, 8
+    ;     ;mul ecx
+
+    ;     ;mov bh, al
+    ;     add bh, 8
+
+    ;     mov DWORD ptr pos, ebx
+    ;     invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
+
+    ; 	jmp zeros
+
+    ; ok:
+
+    ret
+	
 draw_score ENDP
 ;------------------------------------------------------------------------------
 ; draw_pacman

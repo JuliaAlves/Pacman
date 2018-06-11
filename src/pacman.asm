@@ -85,7 +85,7 @@ find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
     
     objects     DWORD   5   DUP(0)
     map         DWORD   0
-    pontos      BYTE    0
+    pontos      DWORD   0
 
     pass_map        DWORD   0
 
@@ -313,8 +313,7 @@ pac_set_mapcell ENDP
 ;       Devolve os pontos
 ;------------------------------------------------------------------------------
 pacman_get_pontos PROC
-    xor eax, eax
-    mov eax, DWORD ptr pontos
+    return pontos
 pacman_get_pontos ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
@@ -392,6 +391,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; Ebaaaa
             .endif
         .endif
     .endif
@@ -409,6 +409,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, PINKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; Ebaaaa
             .endif
         .endif
     .endif
@@ -426,6 +427,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, INKY, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; Ebaaaa
             .endif
         .endif
     .endif
@@ -443,6 +445,7 @@ pac_collision_update PROC USES ebx
                 invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
             .else
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; Ebaaaa
             .endif
         .endif
     .endif
@@ -475,7 +478,7 @@ pac_points_update PROC
     .endif
 
     .if pontos == 242
-        
+        invoke ExitProcess, 0 ; Ebaaaa
     .endif
 
     ret
@@ -729,6 +732,7 @@ find_path PROC USES ebx ecx edx esi srcX : BYTE, srcY : BYTE, dstX : BYTE, dstY 
     invoke AStarFindPath, srcX, srcY, dstX, dstY, pass_map
 
     ; Converte o ID para posições
+    xor edx, edx
     mov ecx, 28
     div ecx
 
