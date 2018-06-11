@@ -478,10 +478,33 @@ pac_points_update PROC
         invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
     .endif
 
-    .if pontos == 242
-        invoke ExitProcess, 0 ; GANHOU
-    .endif
+    mov esi, 0
+    .while esi < 868
 
+        xor edx, edx
+        mov eax, esi
+        mov ecx, 28
+        div ecx
+
+        mov ecx, edx
+        mov ebx, eax
+
+        shl ecx, 3
+        shl ebx, 3
+
+        invoke pac_get_mapcell, cl, bl
+
+        mov edx, ebx
+        mov bh, cl
+
+        .if eax == MAP_SMALLPOINT
+            jmp nao_ganhou
+        .endif
+
+        inc esi
+    .endw
+    invoke ExitProcess, 0 ; ganhou
+    nao_ganhou:
     ret
 pac_points_update ENDP
 ;------------------------------------------------------------------------------

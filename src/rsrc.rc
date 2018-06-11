@@ -8,6 +8,7 @@
 
 #define SND_PACMAN_CHOMP    0x40
 #define SND_PACMAN_DIE    	0x50
+#define SND_PACMAN_POWER   	0x60
 
 RC_ICON             ICON    "../res/mainicon.ico"
 
@@ -17,6 +18,7 @@ RC_MAP_EMPTY        BITMAP  "../res/mapempty.bmp"
 
 SND_PACMAN_CHOMP    WAVE    "../res/wakawaka.wav"
 SND_PACMAN_DIE    	WAVE    "../res/pacman_death.wav"
+SND_PACMAN_POWER   	WAVE    "../res/power.wav"
 
 STRINGTABLE
 BEGIN
