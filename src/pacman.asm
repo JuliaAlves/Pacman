@@ -80,10 +80,16 @@ find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
 ;==============================================================================
 .data
     
+<<<<<<< HEAD
+    objects     DWORD   5   DUP(0)
+    map         DWORD   0
+    pontos      BYTE    0
+=======
     objects         DWORD   5   DUP(0)
     map             DWORD   0
 
     pass_map        DWORD   0
+>>>>>>> c37ef7ec23f9c89a9722b9475fcbdeeda6922bea
 
 ;==============================================================================
 ; Seção de código
@@ -243,11 +249,74 @@ pac_get_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE
     ret
 pac_get_mapcell ENDP
 ;------------------------------------------------------------------------------
+; pac_set_mapcell
+;
+;       Obtém o valor de uma célula no mapa
+;
+;   x   {BYTE}  : Posição X (em píxels)
+;   y   {BYTE}  : Posição Y (em píxels)
+;   n   {BYTE}  : Novo estado
+;------------------------------------------------------------------------------
+pac_set_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE, n: BYTE
+
+    ; Posições X e Y do mapa (em células)
+    LOCAL cellX : BYTE, cellY : BYTE
+
+    .if x >= 224
+        sub x, 224
+    .endif
+    
+    .if y >= 248
+        sub y, 248
+    .endif
+
+    ; Divide as posições em píxel para obter as posições das células
+    mov ecx, 8
+
+    xor eax, eax
+    xor edx, edx
+    mov al, x
+    div ecx
+    mov cellX, al
+
+    xor eax, eax
+    xor edx, edx
+    mov al, y
+    div ecx
+    mov cellY, al
+
+    ; Calcula o offset da célula na string
+    xor eax, eax
+    xor edx, edx
+
+    mov al, cellY
+    mov ecx, 28
+    mul ecx
+    mov esi, eax
+
+    xor eax, eax
+    xor edx, edx
+
+    mov al, cellX
+    add esi, eax
+
+    mov ebx, map
+
+    xor eax, eax
+    mov al, n
+
+    mov BYTE PTR [ebx + esi], al
+
+
+    ret
+pac_set_mapcell ENDP
+
+;------------------------------------------------------------------------------
 ; pac_update
 ;
 ;       Atualiza os objetos do jogo
 ;------------------------------------------------------------------------------
-pac_update PROC USES edx ecx
+pac_update PROC USES edx ecx eax
 
     invoke pacman_direction_update
 
@@ -279,6 +348,22 @@ pac_update PROC USES edx ecx
         invoke pac_position_update, CLYDE
 
         invoke pac_collision
+    .endif
+
+    xor     ebx, ebx
+    xor     edi, edi
+    mov     ebx, ATTR_POSITION
+
+    invoke pac_get_mapcell, bh, bl
+
+    .if al == '.'
+        invoke pac_set_mapcell, bh, bl, '/'
+        mov al, byte ptr [pontos]
+
+        inc al
+
+        mov byte ptr [pontos], al
+
     .endif
 
     ret
@@ -392,7 +477,7 @@ pacman_direction_update PROC
     invoke pac_keystate, VK_RIGHT
     .if ax == 1
         invoke pac_set_attr, PACMAN, ATTR_TURN, TURN_RIGHT
-    .endif
+    .endif  
 
     invoke pac_keystate, VK_LEFT
     .if ax == 1
@@ -820,5 +905,6 @@ pac_finish PROC
 
     ret
 pac_finish ENDP
+
 
 end

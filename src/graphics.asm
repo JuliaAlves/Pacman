@@ -294,6 +294,17 @@ draw_bitmap PROC	pos 		: DWORD,
 	ret
 draw_bitmap ENDP
 ;------------------------------------------------------------------------------
+; draw_score
+;
+;		Desenha o score
+;------------------------------------------------------------------------------
+draw_score PROC
+	LOCAL srcX : DWORD
+	LOCAL srcY : DWORD
+	
+draw_score ENDP
+
+;------------------------------------------------------------------------------
 ; draw_pacman
 ;
 ;		Desenha o pacman
