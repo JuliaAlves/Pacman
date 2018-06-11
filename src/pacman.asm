@@ -466,6 +466,10 @@ pac_points_update PROC
         invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
     .endif
 
+    .if pontos == 242
+        
+    .endif
+
     ret
 pac_points_update ENDP
 ;------------------------------------------------------------------------------

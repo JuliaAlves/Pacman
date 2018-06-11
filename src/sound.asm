@@ -33,6 +33,7 @@ play_resource PROTO :DWORD
 .const
 
     SND_PACMAN_CHOMP    EQU 040h
+    SND_PACMAN_DIE    	EQU 050h
 
 ;==============================================================================
 ; Seção de dados
@@ -41,7 +42,7 @@ play_resource PROTO :DWORD
 
     this_instance       DWORD ?
 
-    pacman_chomp        DWORD ?
+   	current_state       DWORD ?
 
 ;==============================================================================
 ; Seção de código
@@ -57,8 +58,9 @@ play_resource PROTO :DWORD
 sound_load PROC hinstance : DWORD
     m2m this_instance, hinstance
 
-    ;invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
-    
+    invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
+    mov current_state, STATE_NORMAL
+
     ret
 sound_load ENDP
 ;------------------------------------------------------------------------------
@@ -67,6 +69,18 @@ sound_load ENDP
 ;       Atualiza os sons do jogo
 ;------------------------------------------------------------------------------
 sound_update PROC
+	
+	invoke pac_get_attr, PACMAN, ATTR_STATE
+    
+    .if current_state != eax
+    	mov current_state, eax
+
+    	.if current_state == STATE_NORMAL
+			invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
+		.else
+			invoke PlaySound, SND_PACMAN_DIE, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
+		.endif
+    .endif
 
     ret
 sound_update ENDP
