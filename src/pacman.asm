@@ -60,6 +60,9 @@ pac_turn_update PROTO :DWORD
 ; Encontra a direção para o menor caminho de A para B
 find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
 
+; Obtém o timer de morte do pacman
+pacman_get_dead_timer PROTO
+
 ;==============================================================================
 ; Constantes
 ;==============================================================================
@@ -87,7 +90,9 @@ find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
     map         DWORD   0
     pontos      DWORD   0
 
-    pass_map        DWORD   0
+    pass_map    DWORD   0
+
+    dead_timer  BYTE    0
 
 ;==============================================================================
 ; Seção de código
@@ -331,42 +336,59 @@ pac_update PROC USES edx ecx eax
     mov     ecx, MOVEMENT_FRAME_INTERVAL
     div     ecx
 
-    .if edx == 0
+    invoke pac_get_attr, PACMAN, ATTR_STATE
 
-        invoke pac_turn_update, PACMAN
-        invoke pac_turn_update, BLINKY
-        invoke pac_turn_update, PINKY
-        invoke pac_turn_update, INKY
-        invoke pac_turn_update, CLYDE
+    .if edx == 0 
+        .if eax != STATE_DEAD
 
-        invoke ghost_direction_update, BLINKY
-        invoke ghost_direction_update, PINKY
-        invoke ghost_direction_update, INKY
-        invoke ghost_direction_update, CLYDE
+            invoke pac_turn_update, PACMAN
+            invoke pac_turn_update, BLINKY
+            invoke pac_turn_update, PINKY
+            invoke pac_turn_update, INKY
+            invoke pac_turn_update, CLYDE
 
-        invoke pac_position_update, PACMAN
-        invoke pac_position_update, BLINKY
-        invoke pac_position_update, PINKY
-        invoke pac_position_update, INKY
-        invoke pac_position_update, CLYDE
+            invoke ghost_direction_update, BLINKY
+            invoke ghost_direction_update, PINKY
+            invoke ghost_direction_update, INKY
+            invoke ghost_direction_update, CLYDE
 
-        invoke pac_collision_update
+            invoke pac_position_update, PACMAN
+            invoke pac_position_update, BLINKY
+            invoke pac_position_update, PINKY
+            invoke pac_position_update, INKY
+            invoke pac_position_update, CLYDE
 
-        invoke pac_points_update
+            invoke pac_collision_update
+
+            invoke pac_points_update
+        .else
+            inc dead_timer
+
+            .if dead_timer > 44
+                invoke pac_init
+            .endif
+        .endif
     .endif
 
     ret
 pac_update ENDP
+;------------------------------------------------------------------------------
+; pacman_get_dead_timer
+;------------------------------------------------------------------------------
+pacman_get_dead_timer PROC
+    xor eax, eax
+    mov al, dead_timer
+    ret
+pacman_get_dead_timer ENDP
 ;------------------------------------------------------------------------------
 ; pac_collision_update
 ;
 ;       Verifica colisões entre o pacman e os fantasmas
 ;------------------------------------------------------------------------------
 pac_collision_update PROC USES ebx
-    
 
-        LOCAL ghostX : BYTE, ghostY : BYTE, 
-          pacState : DWORD
+    LOCAL ghostX : BYTE, ghostY : BYTE, 
+          state : DWORD
 
     invoke pac_get_attr, PACMAN, ATTR_POSITION
 
@@ -375,80 +397,36 @@ pac_collision_update PROC USES ebx
     shr bh, 3
     shr bl, 3
 
-    invoke pac_get_attr, PACMAN, ATTR_STATE
-    mov pacState, eax
+    mov esi, BLINKY
 
-    invoke pac_get_attr, BLINKY, ATTR_POSITION
-    mov ghostX, ah
-    mov ghostY, al
-    shr ghostX, 3
-    shr ghostY, 3
+    .while esi <= CLYDE
 
-    .if ghostX == bh
-        .if ghostY == bl
-            ; BLINKY se encontrou com o pacman
-            .if pacState == STATE_POWER
-                invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_DEAD
-            .else
-                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
-                invoke ExitProcess, 0 ; Ebaaaa
-            .endif
-        .endif
-    .endif
+        invoke pac_get_attr, esi, ATTR_STATE
+        mov state, eax
 
-    invoke pac_get_attr, PINKY, ATTR_POSITION
-    mov ghostX, ah
-    mov ghostY, al
-    shr ghostX, 3
-    shr ghostY, 3
+        invoke pac_get_attr, esi, ATTR_POSITION
+        mov ghostX, ah
+        mov ghostY, al
+        shr ghostX, 3
+        shr ghostY, 3
 
-    .if ghostX == bh
-        .if ghostY == bl
-            ; PINKY se encontrou com o pacman
-            .if pacState == STATE_POWER
-                invoke pac_set_attr, PINKY, ATTR_STATE, STATE_DEAD
-            .else
-                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
-                invoke ExitProcess, 0 ; Ebaaaa
-            .endif
-        .endif
-    .endif
-
-    invoke pac_get_attr, INKY, ATTR_POSITION
-    mov ghostX, ah
-    mov ghostY, al
-    shr ghostX, 3
-    shr ghostY, 3
-
-    .if ghostX == bh
-        .if ghostY == bl
-            ; INKY se encontrou com o pacman
-            .if pacState == STATE_POWER
-                invoke pac_set_attr, INKY, ATTR_STATE, STATE_DEAD
-            .else
-                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
-                invoke ExitProcess, 0 ; Ebaaaa
-            .endif
-        .endif
-    .endif
-
-    invoke pac_get_attr, CLYDE, ATTR_POSITION
-    mov ghostX, ah
-    mov ghostY, al
-    shr ghostX, 3
-    shr ghostY, 3
-
-    .if ghostX == bh
-        .if ghostY == bl
+        .if ghostX == bh && ghostY == bl
             ; CLYDE se encontrou com o pacman
-            .if pacState == STATE_POWER
-                invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
-            .else
+            .if state == STATE_POWER
+                invoke pac_set_attr, esi, ATTR_STATE, STATE_DEAD
+                add pontos, 200
+            .elseif state == STATE_NORMAL
                 invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
-                invoke ExitProcess, 0 ; Ebaaaa
+                mov dead_timer, 0
             .endif
         .endif
-    .endif
+
+        .if ghostX == 14 && ghostY == 14
+            invoke pac_set_attr, esi, ATTR_STATE, STATE_NORMAL
+        .endif
+
+        add esi, 4
+    .endw
 
     ret
 pac_collision_update ENDP
@@ -474,12 +452,40 @@ pac_points_update PROC
 
     .elseif al == MAP_BIGPOINT
         invoke pac_set_mapcell, bh, bl, MAP_NONE
-        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
+        invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_POWER
+        invoke pac_set_attr, PINKY, ATTR_STATE, STATE_POWER
+        invoke pac_set_attr, INKY, ATTR_STATE, STATE_POWER
+        invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_POWER
     .endif
 
-    .if pontos == 242
-        invoke ExitProcess, 0 ; Ebaaaa
-    .endif
+    mov esi, 0
+	.while esi < 868
+
+		xor edx, edx
+		mov eax, esi
+		mov ecx, 28
+		div ecx
+
+		mov ecx, edx
+		mov ebx, eax
+
+		shl ecx, 3
+		shl ebx, 3
+
+		invoke pac_get_mapcell, cl, bl
+
+		mov edx, ebx
+		mov bh, cl
+
+		cmp eax, MAP_SMALLPOINT
+        je nao_ganhou
+
+		inc esi
+	.endw
+
+    invoke ExitProcess, 0
+
+    nao_ganhou:
 
     ret
 pac_points_update ENDP
@@ -563,62 +569,22 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
         inc esi
     .endw
 
-    ; Fantasma vermelho
-    ; Segue o pacman por trás
-    .if id == BLINKY
-
+    invoke pac_get_attr, id, ATTR_STATE
+    .if eax == STATE_POWER || eax == STATE_DEAD
+    
         mov bh, ghostX
         mov bl, ghostY
 
-        mov ch, dstX
-        mov cl, dstY
-
-        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
-        .if eax == DIR_UP
-            inc cl
-        .elseif eax == DIR_DOWN
-            dec cl
-        .elseif eax == DIR_RIGHT
-            dec ch
-        .elseif eax == DIR_LEFT
-            inc ch
-        .endif
+        mov ch, 14
+        mov cl, 14
 
         invoke find_path, bh, bl, ch, cl
         mov turn, eax
 
-    ; Fantasma rosa
-    ; Segue o pacman pela frente
-    .elseif id == PINKY
-
-        mov bh, ghostX
-        mov bl, ghostY
-
-        mov ch, dstX
-        mov cl, dstY
-        
-        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
-        .if eax == DIR_UP
-            dec cl
-        .elseif eax == DIR_DOWN
-            inc cl
-        .elseif eax == DIR_RIGHT
-            inc ch
-        .elseif eax == DIR_LEFT
-            dec ch
-        .endif
-
-        invoke find_path, bh, bl, ch, cl
-        mov turn, eax
-
-    ; Fantasma azul
-    ; Flick: de vez em quando segue o pacman, de vez em quando é noiado
-    .elseif id == INKY
-
-        invoke graphics_frame_count
-        and eax, 1
-
-        .if eax == 0
+    .else
+        ; Fantasma vermelho
+        ; Segue o pacman por trás
+        .if id == BLINKY
 
             mov bh, ghostX
             mov bl, ghostY
@@ -640,13 +606,15 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
             invoke find_path, bh, bl, ch, cl
             mov turn, eax
 
-        .elseif
+        ; Fantasma rosa
+        ; Segue o pacman pela frente
+        .elseif id == PINKY
 
             mov bh, ghostX
             mov bl, ghostY
 
-            mov ch, 1
-            mov cl, 29
+            mov ch, dstX
+            mov cl, dstY
             
             invoke pac_get_attr, PACMAN, ATTR_DIRECTION
             .if eax == DIR_UP
@@ -662,55 +630,107 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
             invoke find_path, bh, bl, ch, cl
             mov turn, eax
 
+        ; Fantasma azul
+        ; Flick: de vez em quando segue o pacman, de vez em quando é noiado
+        .elseif id == INKY
+
+            invoke graphics_frame_count
+            and eax, 1
+
+            .if eax == 0
+
+                mov bh, ghostX
+                mov bl, ghostY
+
+                mov ch, dstX
+                mov cl, dstY
+
+                invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+                .if eax == DIR_UP
+                    inc cl
+                .elseif eax == DIR_DOWN
+                    dec cl
+                .elseif eax == DIR_RIGHT
+                    dec ch
+                .elseif eax == DIR_LEFT
+                    inc ch
+                .endif
+
+                invoke find_path, bh, bl, ch, cl
+                mov turn, eax
+
+            .elseif
+
+                mov bh, ghostX
+                mov bl, ghostY
+
+                mov ch, 1
+                mov cl, 29
+                
+                invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+                .if eax == DIR_UP
+                    dec cl
+                .elseif eax == DIR_DOWN
+                    inc cl
+                .elseif eax == DIR_RIGHT
+                    inc ch
+                .elseif eax == DIR_LEFT
+                    dec ch
+                .endif
+
+                invoke find_path, bh, bl, ch, cl
+                mov turn, eax
+
+            .endif
+
+        ; Fantasma amarelo
+        ; É noiado
+        .elseif id == CLYDE
+            mov bh, ghostX
+            mov bl, ghostY
+
+            mov ch, dstX
+            mov cl, dstY
+
+            .if bh > ch
+                mov ah, bh
+                sub ah, ch
+            .else
+                mov ah, ch
+                sub ah, bh
+            .endif
+
+            .if bl > cl
+                mov al, bl
+                sub al, cl
+            .else
+                mov al, cl
+                sub al, bl
+            .endif
+
+            mov dh, 0
+            add dh, ah
+            add dh, al
+
+            .if dh < 16
+                mov ch, 1
+                mov cl, 29
+            .endif
+
+            invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+            .if eax == DIR_UP
+                inc cl
+            .elseif eax == DIR_DOWN
+                dec cl
+            .elseif eax == DIR_RIGHT
+                dec ch
+            .elseif eax == DIR_LEFT
+                inc ch
+            .endif
+
+            invoke find_path, bh, bl, ch, cl
+            mov turn, eax
         .endif
-
-    ; Fantasma amarelo
-    ; É noiado
-    .elseif id == CLYDE
-        mov bh, ghostX
-        mov bl, ghostY
-
-        mov ch, dstX
-        mov cl, dstY
-
-        .if bh > ch
-            mov ah, bh
-            sub ah, ch
-        .else
-            mov ah, ch
-            sub ah, bh
-        .endif
-
-        .if bl > cl
-            mov al, bl
-            sub al, cl
-        .else
-            mov al, cl
-            sub al, bl
-        .endif
-
-        mov dh, 0
-        add dh, ah
-        add dh, al
-
-        .if dh < 16
-            mov ch, 1
-            mov cl, 29
-        .endif
-
-        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
-        .if eax == DIR_UP
-            inc cl
-        .elseif eax == DIR_DOWN
-            dec cl
-        .elseif eax == DIR_RIGHT
-            dec ch
-        .elseif eax == DIR_LEFT
-            inc ch
-        .endif
-
-        invoke find_path, bh, bl, ch, cl
-        mov turn, eax
     .endif
 
     invoke pac_set_attr, id, ATTR_TURN, turn

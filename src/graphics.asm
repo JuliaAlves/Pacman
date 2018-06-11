@@ -340,69 +340,6 @@ draw_score PROC uses ebx ecx eax edx edi
 		dec esi
 	.endw
 
-    ; mov edi, 0 ;quantos 0
-
-    ; x_inc:
-    ;     inc edi
-    ;     mov ecx, eax
-
-    ;     ; mod
-    ;     xor eax, eax
-    ;     xor edx, edx
-    ;     mov eax, ecx
-    ;     mov ebx, 10
-    ;     div ebx
-
-    ;     cmp edx, 0
-    ;     je x_inc
-    ;     jne x_n_inc
-
-    ; x_n_inc:
-
-    ;     xor eax, eax
-    ;     xor ebx, ebx
-    ;     mov eax, ecx
-    ;     mov ebx, 8
-    ;     mul ebx
-
-    ;     mov DWORD ptr srcX, eax
-
-    ;     mov DWORD ptr srcY, 208
-
-    ;     mov ebx, 0
-    ;     mov bl, 0
-
-    ;     mov DWORD ptr pos, ebx
-
-    ;     invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
-
-    ;     mov DWORD ptr srcX, 0
-
-    ;     inc edi
-    ; zeros:
-    ;     dec edi
-    ;     cmp edi, 0
-    ;     jne print
-    ;     je ok
-
-    ; print:
-
-    ;     xor eax, eax
-    ;     xor ecx, ecx
-    ;     ;mov al, bh
-    ;     ;mov ecx, 8
-    ;     ;mul ecx
-
-    ;     ;mov bh, al
-    ;     add bh, 8
-
-    ;     mov DWORD ptr pos, ebx
-    ;     invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
-
-    ; 	jmp zeros
-
-    ; ok:
-
     ret
 	
 draw_score ENDP
@@ -434,17 +371,14 @@ draw_pacman PROC
 		mov srcX, 48
 		mov srcY, 0
 
-		m2m dir, frame_count ; estou usando o dir para selecionar o frame
+		invoke pacman_get_dead_timer
+		mov esi, eax ; estou usando o dir para selecionar o frame
+		shr esi, 2
 
-		x_inc:
-			cmp dir, 0
-			je x_n_inc
-
+		.while esi > 0
 			add srcX, 16
-			dec dir
-
-			jmp x_inc
-		x_n_inc:
+			dec esi
+		.endw
 
 	.else ; Isto é o normal
 
@@ -504,9 +438,6 @@ draw_ghost PROC id : DWORD
 	invoke pac_get_attr, id, ATTR_DIRECTION
 	mov dir, eax
 
-	invoke pac_get_attr, PACMAN, ATTR_STATE
-	mov pSta, eax
-
 	invoke pac_get_attr, id, ATTR_STATE
 	mov gSta, eax
 
@@ -553,7 +484,7 @@ draw_ghost PROC id : DWORD
 			jmp y_inc
 		y_n_inc:
 
-		.if pSta == STATE_POWER ; Se o pacman está STATE_POWER
+		.if gSta == STATE_POWER ; Se o pacman está STATE_POWER
 			mov srcX, 128
 			mov srcY, 64
 		.endif

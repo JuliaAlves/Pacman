@@ -22,9 +22,14 @@ pac_keystate    PROTO   :DWORD
 ; Obtém o valor de uma posição no mapa
 pac_get_mapcell PROTO   :BYTE, :BYTE
 
+; Define uma célula do mapa
 pac_set_mapcell PROTO   :BYTE, :BYTE, :BYTE
 
+; Obtém os pontos do pacman
 pacman_get_pontos PROTO
+
+; Obtém o timer de morte
+pacman_get_dead_timer PROTO
 
 ; Atualiza os objetos jogo
 pac_update		PROTO
