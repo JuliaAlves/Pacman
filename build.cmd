@@ -32,6 +32,9 @@ echo Gerando executavel...
 c:\masm32\bin\link /SUBSYSTEM:WINDOWS /OPT:NOREF "obj\main.obj" "obj\sound.obj" "obj\graphics.obj" "obj\pacman.obj" "obj\rsrc.obj" /OUT:"bin\pacman.exe" >>"build.log" 2>&1
 if errorlevel 1 goto :linkerror
 
+echo Copiando DLLs...
+copy astar.dll bin\astar.dll
+
 echo Executando...
 call "bin/pacman.exe"
 goto :eof

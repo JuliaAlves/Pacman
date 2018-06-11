@@ -7,6 +7,7 @@
 #define ST_MAP              0x30
 
 #define SND_PACMAN_CHOMP    0x40
+#define SND_PACMAN_DIE    	0x50
 
 RC_ICON             ICON    "../res/mainicon.ico"
 
@@ -15,6 +16,7 @@ RC_MAP_FULL         BITMAP  "../res/mapfull.bmp"
 RC_MAP_EMPTY        BITMAP  "../res/mapempty.bmp"
 
 SND_PACMAN_CHOMP    WAVE    "../res/wakawaka.wav"
+SND_PACMAN_DIE    	WAVE    "../res/pacman_death.wav"
 
 STRINGTABLE
 BEGIN

@@ -161,7 +161,6 @@ graphics_render PROC hDC : DWORD
 	invoke draw_map
 
 	; Desenha os objetos na tela
-
 	invoke draw_pacman
 
 	invoke draw_ghost, BLINKY
@@ -316,6 +315,7 @@ draw_pacman PROC
 	LOCAL srcY : DWORD
 	LOCAL pos  : DWORD
 	LOCAL dir  : DWORD
+	LOCAL sta  : DWORD
 
 	invoke pac_get_attr, PACMAN, ATTR_POSITION
 	mov pos, eax
@@ -323,33 +323,57 @@ draw_pacman PROC
 
 	invoke pac_get_attr, PACMAN, ATTR_DIRECTION
 	mov dir, eax
+	
+	invoke pac_get_attr, PACMAN, ATTR_STATE
+	mov sta, eax
 
-	mov srcX, 0
-	mov srcY, 0
+	.if sta == STATE_DEAD ; Isto é a animacao dele morrendo
 
-	; Calcula a posição Y do sprite
-	shr dir, 16
-	y_inc:
-		cmp dir, 0
-		je y_n_inc
+		mov srcX, 48
+		mov srcY, 0
 
-		add srcY, 16
-		dec dir
+		m2m dir, frame_count ; estou usando o dir para selecionar o frame
 
-		jmp y_inc
-	y_n_inc:
+		x_inc:
+			cmp dir, 0
+			je x_n_inc
 
-	; Contador de frames DIV intervalo dos frames
-	mov edx, 0
-	mov eax, frame_count
-	mov ebx, ANIM_INTERVAL
-	div ebx
+			add srcX, 16
+			dec dir
 
-	; Calcula a posição X do sprite
-	.if eax == 0
-		add srcX, 16
+			jmp x_inc
+		x_n_inc:
+
+	.else ; Isto é o normal
+
+		mov srcX, 0
+		mov srcY, 0
+
+		; Calcula a posição Y do sprite
+		shr dir, 16
+		y_inc:
+			cmp dir, 0
+			je y_n_inc
+
+			add srcY, 16
+			dec dir
+
+			jmp y_inc
+		y_n_inc:
+
+		; Contador de frames DIV intervalo dos frames
+		mov edx, 0
+		mov eax, frame_count
+		mov ebx, ANIM_INTERVAL
+		div ebx
+
+		; Calcula a posição X do sprite
+		.if eax == 0
+			add srcX, 16
+		.endif
+
 	.endif
-
+	
 	; Desenha o bitmap
 	invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 16, 16
 	
@@ -368,27 +392,71 @@ draw_ghost PROC id : DWORD
 	LOCAL srcY : DWORD
 	LOCAL pos  : DWORD
 	LOCAL dir  : DWORD
+	LOCAL pSta  : DWORD ; Estado do Pacman
+	LOCAL gSta  : DWORD ; Estado do Fantasma
 	
 	invoke pac_get_attr, id, ATTR_POSITION
 	mov pos, eax
-	sub pos, 4
+	sub pos, 00404h
 
 	invoke pac_get_attr, id, ATTR_DIRECTION
 	mov dir, eax
 
-	mov srcX, 0
-	mov srcY, 64
+	invoke pac_get_attr, PACMAN, ATTR_STATE
+	mov pSta, eax
 
-	; Calcula a posição Y do sprite
-	y_inc:
-		sub id, 004h
-		cmp id, 0
-		je y_n_inc
+	invoke pac_get_attr, id, ATTR_STATE
+	mov gSta, eax
 
-		add srcY, 16
+	.if gSta == STATE_DEAD
+		mov srcX, 128
+		mov srcY, 80
 
-		jmp y_inc
-	y_n_inc:
+		; Calcula a posição X do sprite
+		shr dir, 16
+		x_inc_dead:
+			cmp dir, 0
+			je x_n_inc_dead
+
+			add srcX, 16
+			dec dir
+
+			jmp x_inc_dead
+		x_n_inc_dead:
+
+	.else
+		mov srcX, 0
+		mov srcY, 64
+
+		; Calcula a posição X do sprite
+		shr dir, 16
+		x_inc:
+			cmp dir, 0
+			je x_n_inc
+
+			add srcX, 32
+			dec dir
+
+			jmp x_inc
+		x_n_inc:
+
+		; Calcula a posição Y do sprite
+		y_inc:
+			sub id, 004h
+			cmp id, 0
+			je y_n_inc
+
+			add srcY, 16
+
+			jmp y_inc
+		y_n_inc:
+
+	.endif
+
+	.if pSta == STATE_POWER ; Se o pacman está STATE_POWER
+		mov srcX, 128
+		mov srcY, 64
+	.endif
 
 	; Contador de frames DIV intervalo dos frames
 	mov edx, 0
@@ -396,20 +464,12 @@ draw_ghost PROC id : DWORD
 	mov ebx, ANIM_INTERVAL
 	div ebx
 
-	; Calcula a posição X do sprite
-	shr dir, 16
-	x_inc:
-		cmp dir, 0
-		je x_n_inc
 
-		add srcX, 32
-		dec dir
-
-		jmp x_inc
-	x_n_inc:
 
 	.if eax == 0
-		add srcX, 16
+		.if gSta == STATE_DEAD
+			add srcX, 16
+		.endif
 	.endif
 
 	; Desenha o bitmap
