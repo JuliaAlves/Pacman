@@ -465,7 +465,7 @@ draw_ghost PROC id : DWORD
 	div ebx
 
 	.if eax == 0
-		.if gSta == STATE_DEAD
+		.if gSta != STATE_DEAD
 			add srcX, 16
 		.endif
 	.endif
