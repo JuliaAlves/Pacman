@@ -386,7 +386,7 @@ draw_ghost PROC id : DWORD
 	
 	invoke pac_get_attr, id, ATTR_POSITION
 	mov pos, eax
-	sub pos, 4
+	sub pos, 00404h
 
 	invoke pac_get_attr, id, ATTR_DIRECTION
 	mov dir, eax

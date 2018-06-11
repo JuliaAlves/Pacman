@@ -57,7 +57,7 @@ play_resource PROTO :DWORD
 sound_load PROC hinstance : DWORD
     m2m this_instance, hinstance
 
-    invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
+    ;invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
     
     ret
 sound_load ENDP

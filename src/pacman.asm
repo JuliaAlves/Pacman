@@ -20,6 +20,21 @@ include include\graphics.inc
 include c:\MASM32\INCLUDE\msvcrt.inc
 includelib c:\MASM32\LIB\msvcrt.lib
 
+includelib libAStar.dll.lib
+
+;------------------------------------------------------------------------------
+; int AStarFindPath(
+;           const int nStartX, const int nStartY,
+;		    const int nTargetX, const int nTargetY,
+;		    const unsigned char* pMap
+; )
+;------------------------------------------------------------------------------
+; Library:						AStar.lib
+; DLL:							AStar.dll
+;------------------------------------------------------------------------------
+AStarFindPath PROTO :DWORD, :DWORD,
+                    :DWORD, :DWORD,
+                    :DWORD
 ;==============================================================================
 ; Protótipos
 ;==============================================================================
@@ -35,6 +50,9 @@ pac_position_update PROTO :DWORD
 
 ; Atualiza o giro de um objeto do jogo
 pac_turn_update PROTO :DWORD
+
+; Encontra a direção para o menor caminho de A para B
+find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
 
 ;==============================================================================
 ; Constantes
@@ -59,8 +77,10 @@ pac_turn_update PROTO :DWORD
 ;==============================================================================
 .data
     
-    objects     DWORD   5   DUP(0)
-    map         DWORD   0
+    objects         DWORD   5   DUP(0)
+    map             DWORD   0
+
+    pass_map        DWORD   0
 
 ;==============================================================================
 ; Seção de código
@@ -88,6 +108,25 @@ pac_init PROC
 
     invoke GetModuleHandle, NULL
     invoke LoadString, eax, ST_MAP, map, 869    ; Carrega o buffer dos resources
+    
+    invoke crt_malloc, 869                      ; Aloca memória para o buffer
+    mov pass_map, eax
+
+    ; Carrega o mapa usado para calcular o menor caminho entre dois pontos
+    invoke GetModuleHandle, NULL
+    invoke LoadString, eax, ST_MAP, map, 869    ; Carrega o buffer dos resources
+
+    mov ebx, pass_map
+    mov esi, 0
+    .while esi < 868
+        .if BYTE PTR [ebx + esi] == MAP_WALL
+            mov BYTE PTR [ebx + esi], 0
+        .else
+            mov BYTE PTR [ebx + esi], 1
+        .endif
+
+        inc esi
+    .endw
 
     xor eax, eax
 
@@ -170,18 +209,12 @@ pac_get_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE
     .endif
 
     ; Divide as posições em píxel para obter as posições das células
-    mov ecx, 8
-
-    xor eax, eax
-    xor edx, edx
     mov al, x
-    div ecx
+    shr al, 3
     mov cellX, al
 
-    xor eax, eax
-    xor edx, edx
     mov al, y
-    div ecx
+    shr al, 3
     mov cellY, al
 
     ; Calcula o offset da célula na string
@@ -204,7 +237,7 @@ pac_get_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE
     xor eax, eax
     mov al, BYTE PTR [ebx + esi]
 
-    ret 
+    ret
 pac_get_mapcell ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
@@ -279,8 +312,130 @@ pacman_direction_update ENDP
 ;   id  {DWORD} : ID do fantasma
 ;------------------------------------------------------------------------------
 ghost_direction_update PROC id : DWORD
+    
+    LOCAL dstX : BYTE, dstY : BYTE,
+          ghostX : BYTE, ghostY : BYTE,
+          direction : DWORD,
+          turn : DWORD
+
+    mov turn, 0
+
+    invoke pac_get_attr, PACMAN, ATTR_POSITION
+    mov dstX, ah
+    mov dstY, al
+    shr dstX, 3
+    shr dstY, 3
+    
+    invoke pac_get_attr, id, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    ; Fantasma vermelho
+    ; Segue o pacman por trás
+    .if id == BLINKY
+
+        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+        
+        .if eax == DIR_UP
+            inc dstY
+        .elseif eax == DIR_DOWN
+            dec dstY
+        .elseif eax == DIR_RIGHT
+            dec dstX
+        .elseif eax == DIR_LEFT
+            inc dstX
+        .endif
+
+        mov bh, dstX
+        mov bl, dstY
+
+        invoke find_path, ghostX, ghostY, bh, bl
+        mov turn, eax
+
+    ; Fantasma rosa
+    ; Segue o pacman pela frente
+    .elseif id == PINKY
+
+        invoke pac_get_attr, PACMAN, ATTR_TURN
+        
+        .if eax == TURN_UP
+            dec dstY
+        .elseif eax == TURN_DOWN
+            inc dstY
+        .elseif eax == TURN_RIGHT
+            inc dstX
+        .elseif eax == TURN_LEFT
+            dec dstX
+        .endif
+        
+        mov ah, dstX
+        mov al, dstY
+
+        .if al > ghostY
+            mov turn, TURN_DOWN
+        .elseif al < ghostY
+            mov turn, TURN_UP
+        .elseif ah > ghostX
+            mov turn, TURN_RIGHT
+        .elseif ah < ghostX
+            mov turn, TURN_LEFT
+        .endif
+
+    ; Fantasma azul
+    ; Flick: de vez em quando segue o pacman, de vez em quando é noiado
+    .elseif id == INKY
+
+    ; Fantasma amarelo
+    ; É noiado
+    .elseif id == CLYDE
+
+    .endif
+
+    invoke pac_set_attr, id, ATTR_TURN, turn
+
     ret
 ghost_direction_update ENDP
+;------------------------------------------------------------------------------
+; find_path
+;
+;       Encontra a direção do melhor caminho de A para B
+;
+;   srcX    {BYTE}  : X (célula) de A
+;   srcY    {BYTE}  : Y (célula) de A
+;   dstX    {BYTE}  : X (célula) de B
+;   dstY    {BYTE}  : Y (célula) de A
+;------------------------------------------------------------------------------
+find_path PROC USES ebx ecx edx esi srcX : BYTE, srcY : BYTE, dstX : BYTE, dstY : BYTE
+
+    
+
+    mov esi, eax
+
+    ; Converte o índice em uma posição
+    xor eax, eax
+    xor edx, edx
+    mov ecx, 28
+    mov eax, esi
+    div ecx
+
+    mov bh, dl
+    mov bl, al
+
+    ; Pega a direção a se virar para a direção
+    .if bh > srcX
+        mov eax, TURN_RIGHT
+    .elseif bh < srcX
+        mov eax, TURN_LEFT
+    .elseif bl > srcY
+        mov eax, TURN_DOWN
+    .else
+        mov eax, TURN_UP
+    .endif
+
+    ret
+find_path ENDP
 ;------------------------------------------------------------------------------
 ; pac_position_update
 ;
