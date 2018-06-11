@@ -261,7 +261,7 @@ on_render PROC hWnd : DWORD
 	call 	sound_update
 	invoke 	graphics_render, hDC
 
-	; Finaliza o desenho e libera os recursor
+	; Finaliza o desenho e libera os recursos
 	invoke 	EndPaint, hWnd, ADDR Ps
 
 	; Invalida de novo, para chamar a função infinitamente

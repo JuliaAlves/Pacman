@@ -307,7 +307,15 @@ pac_set_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE, n: BYTE
 
     ret
 pac_set_mapcell ENDP
-
+;------------------------------------------------------------------------------
+; pacman_get_pontos
+;
+;       Devolve os pontos
+;------------------------------------------------------------------------------
+pacman_get_pontos PROC
+    xor eax, eax
+    mov eax, DWORD ptr pontos
+pacman_get_pontos ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
 ;
@@ -556,6 +564,9 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
     ; Segue o pacman por trás
     .if id == BLINKY
 
+        mov bh, ghostX
+        mov bl, ghostY
+
         mov ch, dstX
         mov cl, dstY
 
@@ -570,12 +581,15 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
             inc ch
         .endif
 
-        invoke find_path, ghostX, ghostY, ch, cl
+        invoke find_path, bh, bl, ch, cl
         mov turn, eax
 
     ; Fantasma rosa
     ; Segue o pacman pela frente
     .elseif id == PINKY
+
+        mov bh, ghostX
+        mov bl, ghostY
 
         mov ch, dstX
         mov cl, dstY
@@ -591,17 +605,109 @@ ghost_direction_update PROC USES ebx ecx esi id : DWORD
             dec ch
         .endif
 
-        invoke find_path, ghostX, ghostY, ch, cl
+        invoke find_path, bh, bl, ch, cl
         mov turn, eax
 
     ; Fantasma azul
     ; Flick: de vez em quando segue o pacman, de vez em quando é noiado
     .elseif id == INKY
 
+        invoke graphics_frame_count
+        and eax, 1
+
+        .if eax == 0
+
+            mov bh, ghostX
+            mov bl, ghostY
+
+            mov ch, dstX
+            mov cl, dstY
+
+            invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+            .if eax == DIR_UP
+                inc cl
+            .elseif eax == DIR_DOWN
+                dec cl
+            .elseif eax == DIR_RIGHT
+                dec ch
+            .elseif eax == DIR_LEFT
+                inc ch
+            .endif
+
+            invoke find_path, bh, bl, ch, cl
+            mov turn, eax
+
+        .elseif
+
+            mov bh, ghostX
+            mov bl, ghostY
+
+            mov ch, 1
+            mov cl, 29
+            
+            invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+            .if eax == DIR_UP
+                dec cl
+            .elseif eax == DIR_DOWN
+                inc cl
+            .elseif eax == DIR_RIGHT
+                inc ch
+            .elseif eax == DIR_LEFT
+                dec ch
+            .endif
+
+            invoke find_path, bh, bl, ch, cl
+            mov turn, eax
+
+        .endif
+
     ; Fantasma amarelo
     ; É noiado
     .elseif id == CLYDE
+        mov bh, ghostX
+        mov bl, ghostY
 
+        mov ch, dstX
+        mov cl, dstY
+
+        .if bh > ch
+            mov ah, bh
+            sub ah, ch
+        .else
+            mov ah, ch
+            sub ah, bh
+        .endif
+
+        .if bl > cl
+            mov al, bl
+            sub al, cl
+        .else
+            mov al, cl
+            sub al, bl
+        .endif
+
+        mov dh, 0
+        add dh, ah
+        add dh, al
+
+        .if dh < 16
+            mov ch, 1
+            mov cl, 29
+        .endif
+
+        invoke pac_get_attr, PACMAN, ATTR_DIRECTION
+        .if eax == DIR_UP
+            inc cl
+        .elseif eax == DIR_DOWN
+            dec cl
+        .elseif eax == DIR_RIGHT
+            dec ch
+        .elseif eax == DIR_LEFT
+            inc ch
+        .endif
+
+        invoke find_path, bh, bl, ch, cl
+        mov turn, eax
     .endif
 
     invoke pac_set_attr, id, ATTR_TURN, turn

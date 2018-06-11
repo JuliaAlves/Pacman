@@ -22,6 +22,10 @@ pac_keystate    PROTO   :DWORD
 ; Obtém o valor de uma posição no mapa
 pac_get_mapcell PROTO   :BYTE, :BYTE
 
+pac_set_mapcell PROTO   :BYTE, :BYTE, :BYTE
+
+pacman_get_pontos PROTO
+
 ; Atualiza os objetos jogo
 pac_update		PROTO
 
