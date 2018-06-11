@@ -89,7 +89,6 @@ find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
 
     pass_map        DWORD   0
 
-
 ;==============================================================================
 ; Seção de código
 ;==============================================================================
@@ -658,7 +657,7 @@ pac_position_update PROC USES ebx ecx edx id : DWORD
 
         push ecx    ; Salva a posição anterior
 
-        ; Anda para baixo
+        ; Anda para cima
         dec cl
 
         .if cl == 0FFh
@@ -693,15 +692,10 @@ pac_position_update PROC USES ebx ecx edx id : DWORD
         sub cl, 7
 
         .if eax == MAP_WALL
-            .if eax == MAP_SMALLPOINT
-                ; Deveria consumir um pontinho
-            .elseif eax == MAP_BIGPOINT
-                ; Deveria consumir um pontao
             pop ecx
         .else
             pop edx
         .endif
-    .endif
 
     .elseif eax == DIR_RIGHT
 
