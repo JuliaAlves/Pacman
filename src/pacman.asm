@@ -427,6 +427,23 @@ pac_collision_update PROC USES ebx
 
         add esi, 4
     .endw
+    invoke pac_get_attr, CLYDE, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    .if ghostX == bh
+        .if ghostY == bl
+            ; CLYDE se encontrou com o pacman
+            .if pacState == STATE_POWER
+                invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
+            .else
+                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+                invoke ExitProcess, 0 ; PERDEU
+            .endif
+        .endif
+    .endif
 
     ret
 pac_collision_update ENDP
