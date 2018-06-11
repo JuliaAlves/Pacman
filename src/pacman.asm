@@ -39,6 +39,9 @@ AStarFindPath PROTO :DWORD, :DWORD,
 ; Protótipos
 ;==============================================================================
 
+; Verifica as colisões entre atores
+pac_collision PROTO
+
 ; Atualiza a direção do Pacman
 pacman_direction_update PROTO
 
@@ -261,6 +264,8 @@ pac_update PROC USES edx ecx
     div     ecx
 
     .if edx == 0
+        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
+
         invoke pac_turn_update, PACMAN
         invoke pac_turn_update, BLINKY
         invoke pac_turn_update, PINKY
@@ -272,10 +277,102 @@ pac_update PROC USES edx ecx
         invoke pac_position_update, PINKY
         invoke pac_position_update, INKY
         invoke pac_position_update, CLYDE
+
+        invoke pac_collision
     .endif
 
     ret
 pac_update ENDP
+;------------------------------------------------------------------------------
+; pac_collision
+;
+;       Verifica colisões entre o pacman e os fantasmas
+;------------------------------------------------------------------------------
+pac_collision PROC uses bl
+    
+
+        LOCAL pacX : BYTE, pacY : BYTE,
+          ghostX : BYTE, ghostY : BYTE, 
+          pacState : DWORD
+
+    invoke pac_get_attr, PACMAN, ATTR_POSITION
+
+    mov pacX, ah
+    mov pacY, al
+    shr pacX, 3
+    shr pacY, 3
+
+
+    invoke pac_get_attr, BLINKY, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    .if ghostX == pacX
+        .if ghostY == pacY
+            ; BLINKY se encontrou com o pacman
+            .if pacState == STATE_POWER
+                invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_DEAD
+            .else
+                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+            .endif
+        .endif
+    .endif
+
+    invoke pac_get_attr, PINKY, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    .if ghostX == pacX
+        .if ghostY == pacY
+            ; PINKY se encontrou com o pacman
+            .if pacState == STATE_POWER
+                invoke pac_set_attr, PINKY, ATTR_STATE, STATE_DEAD
+            .else
+                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+            .endif
+        .endif
+    .endif
+
+    invoke pac_get_attr, INKY, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    .if ghostX == pacX
+        .if ghostY == pacY
+            ; INKY se encontrou com o pacman
+            .if pacState == STATE_POWER
+                invoke pac_set_attr, INKY, ATTR_STATE, STATE_DEAD
+            .else
+                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+            .endif
+        .endif
+    .endif
+
+    invoke pac_get_attr, CLYDE, ATTR_POSITION
+    mov ghostX, ah
+    mov ghostY, al
+    shr ghostX, 3
+    shr ghostY, 3
+
+    .if ghostX == pacX
+        .if ghostY == pacY
+            ; CLYDE se encontrou com o pacman
+            .if pacState == STATE_POWER
+                invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
+            .else
+                invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_DEAD
+            .endif
+        .endif
+    .endif
+
+    ret
+pac_collision ENDP
 ;------------------------------------------------------------------------------
 ; pacman_direction_update
 ;
