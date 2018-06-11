@@ -77,7 +77,7 @@ sound_update PROC
 
     	.if current_state == STATE_NORMAL
 			invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
-		.else
+		.elseif current_state == STATE_DEAD
 			invoke PlaySound, SND_PACMAN_DIE, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
 		.endif
     .endif
