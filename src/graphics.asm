@@ -464,8 +464,6 @@ draw_ghost PROC id : DWORD
 	mov ebx, ANIM_INTERVAL
 	div ebx
 
-
-
 	.if eax == 0
 		.if gSta == STATE_DEAD
 			add srcX, 16

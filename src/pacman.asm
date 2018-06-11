@@ -329,7 +329,6 @@ pac_update PROC USES edx ecx eax
     div     ecx
 
     .if edx == 0
-        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
 
         invoke pac_turn_update, PACMAN
         invoke pac_turn_update, BLINKY
@@ -352,14 +351,16 @@ pac_update PROC USES edx ecx eax
 
     invoke pac_get_mapcell, bh, bl
 
-    .if al == '.'
-        invoke pac_set_mapcell, bh, bl, '/'
+    .if al == MAP_SMALLPOINT
+        
+        invoke pac_set_mapcell, bh, bl, MAP_NONE
         mov al, byte ptr [pontos]
-
         inc al
-
         mov byte ptr [pontos], al
 
+    .elseif al == MAP_BIGPOINT
+        invoke pac_set_mapcell, bh, bl, MAP_NONE
+        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
     .endif
 
     ret
@@ -369,19 +370,19 @@ pac_update ENDP
 ;
 ;       Verifica colisões entre o pacman e os fantasmas
 ;------------------------------------------------------------------------------
-pac_collision PROC uses bl
+pac_collision PROC USES ebx
     
 
-        LOCAL pacX : BYTE, pacY : BYTE,
-          ghostX : BYTE, ghostY : BYTE, 
+        LOCAL ghostX : BYTE, ghostY : BYTE, 
           pacState : DWORD
 
     invoke pac_get_attr, PACMAN, ATTR_POSITION
 
-    mov pacX, ah
-    mov pacY, al
-    shr pacX, 3
-    shr pacY, 3
+    mov bh, ah
+    mov bl, al
+    shr bh, 3
+    shr bl, 3
+
 
 
     invoke pac_get_attr, BLINKY, ATTR_POSITION
@@ -390,8 +391,8 @@ pac_collision PROC uses bl
     shr ghostX, 3
     shr ghostY, 3
 
-    .if ghostX == pacX
-        .if ghostY == pacY
+    .if ghostX == bh
+        .if ghostY == bl
             ; BLINKY se encontrou com o pacman
             .if pacState == STATE_POWER
                 invoke pac_set_attr, BLINKY, ATTR_STATE, STATE_DEAD
@@ -407,8 +408,8 @@ pac_collision PROC uses bl
     shr ghostX, 3
     shr ghostY, 3
 
-    .if ghostX == pacX
-        .if ghostY == pacY
+    .if ghostX == bh
+        .if ghostY == bl
             ; PINKY se encontrou com o pacman
             .if pacState == STATE_POWER
                 invoke pac_set_attr, PINKY, ATTR_STATE, STATE_DEAD
@@ -424,8 +425,8 @@ pac_collision PROC uses bl
     shr ghostX, 3
     shr ghostY, 3
 
-    .if ghostX == pacX
-        .if ghostY == pacY
+    .if ghostX == bh
+        .if ghostY == bl
             ; INKY se encontrou com o pacman
             .if pacState == STATE_POWER
                 invoke pac_set_attr, INKY, ATTR_STATE, STATE_DEAD
@@ -441,8 +442,8 @@ pac_collision PROC uses bl
     shr ghostX, 3
     shr ghostY, 3
 
-    .if ghostX == pacX
-        .if ghostY == pacY
+    .if ghostX == bh
+        .if ghostY == bl
             ; CLYDE se encontrou com o pacman
             .if pacState == STATE_POWER
                 invoke pac_set_attr, CLYDE, ATTR_STATE, STATE_DEAD
