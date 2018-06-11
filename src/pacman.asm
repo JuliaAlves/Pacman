@@ -40,7 +40,10 @@ AStarFindPath PROTO :BYTE, :BYTE,
 ;==============================================================================
 
 ; Verifica as colisões entre atores
-pac_collision PROTO
+pac_collision_update PROTO
+
+; Come pontos
+pac_points_update PROTO
 
 ; Atualiza a direção do Pacman
 pacman_direction_update PROTO
@@ -303,7 +306,6 @@ pac_set_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE, n: BYTE
 
     mov BYTE PTR [ebx + esi], al
 
-
     ret
 pac_set_mapcell ENDP
 
@@ -342,35 +344,19 @@ pac_update PROC USES edx ecx eax
         invoke pac_position_update, INKY
         invoke pac_position_update, CLYDE
 
-        invoke pac_collision
-    .endif
+        invoke pac_collision_update
 
-    xor     ebx, ebx
-    xor     edi, edi
-    mov     ebx, ATTR_POSITION
-
-    invoke pac_get_mapcell, bh, bl
-
-    .if al == MAP_SMALLPOINT
-        
-        invoke pac_set_mapcell, bh, bl, MAP_NONE
-        mov al, byte ptr [pontos]
-        inc al
-        mov byte ptr [pontos], al
-
-    .elseif al == MAP_BIGPOINT
-        invoke pac_set_mapcell, bh, bl, MAP_NONE
-        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
+        invoke pac_points_update
     .endif
 
     ret
 pac_update ENDP
 ;------------------------------------------------------------------------------
-; pac_collision
+; pac_collision_update
 ;
 ;       Verifica colisões entre o pacman e os fantasmas
 ;------------------------------------------------------------------------------
-pac_collision PROC USES ebx
+pac_collision_update PROC USES ebx
     
 
         LOCAL ghostX : BYTE, ghostY : BYTE, 
@@ -454,7 +440,34 @@ pac_collision PROC USES ebx
     .endif
 
     ret
-pac_collision ENDP
+pac_collision_update ENDP
+;------------------------------------------------------------------------------
+; pac_points_update
+;
+;       Verifica o pacman comendo pontos
+;------------------------------------------------------------------------------
+pac_points_update PROC
+    xor     ebx, ebx
+    xor     edi, edi
+    invoke pac_get_attr, PACMAN, ATTR_POSITION
+    mov     ebx, eax
+
+    invoke pac_get_mapcell, bh, bl
+
+    .if al == MAP_SMALLPOINT
+        
+        invoke pac_set_mapcell, bh, bl, MAP_NONE
+        mov al, byte ptr [pontos]
+        inc al
+        mov byte ptr [pontos], al
+
+    .elseif al == MAP_BIGPOINT
+        invoke pac_set_mapcell, bh, bl, MAP_NONE
+        invoke pac_set_attr, PACMAN, ATTR_STATE, STATE_POWER
+    .endif
+
+    ret
+pac_points_update ENDP
 ;------------------------------------------------------------------------------
 ; pacman_direction_update
 ;
