@@ -307,7 +307,15 @@ pac_set_mapcell PROC USES ebx ecx edx esi x : BYTE, y : BYTE, n: BYTE
 
     ret
 pac_set_mapcell ENDP
-
+;------------------------------------------------------------------------------
+; pacman_get_pontos
+;
+;       Devolve os pontos
+;------------------------------------------------------------------------------
+pacman_get_pontos PROC
+    xor eax, eax
+    mov eax, DWORD ptr pontos
+pacman_get_pontos ENDP
 ;------------------------------------------------------------------------------
 ; pac_update
 ;

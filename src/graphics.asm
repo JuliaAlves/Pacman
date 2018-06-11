@@ -75,6 +75,8 @@ draw_ghost		PROTO 	:DWORD
 ; Desenha o mapa
 draw_map 		PROTO
 
+; Desenha o score
+draw_score PROTO
 ;==============================================================================
 ; Seção de dados
 ;==============================================================================
@@ -295,15 +297,79 @@ draw_bitmap PROC	pos 		: DWORD,
 draw_bitmap ENDP
 ;------------------------------------------------------------------------------
 ; draw_score
-;
+;	
 ;		Desenha o score
 ;------------------------------------------------------------------------------
 draw_score PROC
-	LOCAL srcX : DWORD
-	LOCAL srcY : DWORD
-	
-draw_score ENDP
+    LOCAL srcX : DWORD
+    LOCAL srcY : DWORD
+    LOCAL pos  : DWORD
 
+    invoke pacman_get_pontos
+    mov ecx, eax
+    mov edi, 0 ;quantos 0
+
+    x_inc:
+        inc edi
+        mov ecx, eax
+
+        ; mod
+        xor eax, eax
+        xor edx, edx
+        mov eax, ecx
+        mov ebx, 10
+        div ebx
+
+        cmp edx, 0
+        je x_inc
+        jne x_n_inc
+
+    x_n_inc:
+
+        dec ecx
+
+        xor eax, eax
+        xor ebx, ebx
+        mov eax, ecx
+        mov ebx, 8
+        mul ebx
+
+        mov DWORD ptr srcX, eax
+
+        mov DWORD ptr srcY, 208
+
+        mov ebx, 0
+
+        mov DWORD ptr pos, ebx
+
+        invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
+
+        mov DWORD ptr srcX, 0
+
+        inc edx
+    zeros:
+        dec edx
+        cmp edx, 0
+        jne print
+        je ok
+
+    print:
+        xor eax, eax
+        xor ecx, ecx
+        mov al, bh
+        mov ecx, 8
+        mul ebx
+
+        mov bl, al
+
+        mov DWORD ptr pos, ebx
+        invoke draw_bitmap, pos, bitmap_sprites, srcX, srcY, 8, 8
+
+    ok:
+
+
+
+draw_score ENDP
 ;------------------------------------------------------------------------------
 ; draw_pacman
 ;
