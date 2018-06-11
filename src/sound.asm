@@ -72,8 +72,6 @@ sound_load ENDP
 ;------------------------------------------------------------------------------
 sound_update PROC
 	
-    invoke pac_get_attr, PACMAN, ATTR_STATE
-
     mov esi, BLINKY
     .while esi <= CLYDE
         invoke pac_get_attr, esi, ATTR_STATE
@@ -90,8 +88,14 @@ sound_update PROC
         .endif
         jmp n_fim
     fim:
+
+        .if current_state_ghosts != STATE_NORMAL
+            invoke PlaySound, SND_PACMAN_CHOMP, this_instance, SND_RESOURCE or SND_LOOP or SND_ASYNC
+        .endif
+
         mov current_state_ghosts, STATE_NORMAL
 
+        invoke pac_get_attr, PACMAN, ATTR_STATE
 
         .if current_state != eax
         	mov current_state, eax
