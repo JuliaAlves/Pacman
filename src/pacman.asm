@@ -333,10 +333,15 @@ pac_position_update PROC USES ebx ecx edx id : DWORD
         sub cl, 7
 
         .if eax == MAP_WALL
+            .if eax == MAP_SMALLPOINT
+                ; Deveria consumir um pontinho
+            .elseif eax == MAP_BIGPOINT
+                ; Deveria consumir um pontao
             pop ecx
         .else
             pop edx
         .endif
+    .endif
 
     .elseif eax == DIR_RIGHT
 
