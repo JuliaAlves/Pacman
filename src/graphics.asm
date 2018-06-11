@@ -517,11 +517,10 @@ draw_ghost PROC id : DWORD
 			jmp y_inc
 		y_n_inc:
 
-	.endif
-
-	.if pSta == STATE_POWER ; Se o pacman está STATE_POWER
-		mov srcX, 128
-		mov srcY, 64
+		.if pSta == STATE_POWER ; Se o pacman está STATE_POWER
+			mov srcX, 128
+			mov srcY, 64
+		.endif
 	.endif
 
 	; Contador de frames DIV intervalo dos frames

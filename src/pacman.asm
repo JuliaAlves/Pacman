@@ -376,7 +376,8 @@ pac_collision_update PROC USES ebx
     shr bh, 3
     shr bl, 3
 
-
+    invoke pac_get_attr, PACMAN, ATTR_STATE
+    mov pacState, eax
 
     invoke pac_get_attr, BLINKY, ATTR_POSITION
     mov ghostX, ah
