@@ -80,16 +80,12 @@ find_path PROTO :BYTE, :BYTE, :BYTE, :BYTE
 ;==============================================================================
 .data
     
-<<<<<<< HEAD
     objects     DWORD   5   DUP(0)
     map         DWORD   0
     pontos      BYTE    0
-=======
-    objects         DWORD   5   DUP(0)
-    map             DWORD   0
 
     pass_map        DWORD   0
->>>>>>> c37ef7ec23f9c89a9722b9475fcbdeeda6922bea
+
 
 ;==============================================================================
 ; Seção de código
